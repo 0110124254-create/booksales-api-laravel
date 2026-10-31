@@ -8,29 +8,29 @@ use App\Models\Sale;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class BookSalesTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_catalog_displays_database_books_and_checkout_form(): void
+    public function test_api_catalog_returns_books_and_the_api_root(): void
     {
-        $book = Book::factory()->create([
+        Book::factory()->create([
             'title' => 'Buku Contoh',
             'stock' => 4,
             'price' => 45000,
         ]);
 
-        $this->get('/')
+        $this->getJson('/api')
             ->assertOk()
-            ->assertSee('Buku Contoh')
-            ->assertSee('Rp45.000')
-            ->assertSee(route('sales.store'));
+            ->assertJsonFragment(['title' => 'Buku Contoh']);
 
-        $this->get(route('books.index'))
+        $this->getJson('/api/books')
             ->assertOk()
-            ->assertSee('Buku Contoh');
+            ->assertJsonPath('message', 'Get All Resource')
+            ->assertJsonFragment(['title' => 'Buku Contoh']);
     }
 
     public function test_database_seeder_creates_five_authors_and_five_linked_books(): void
@@ -50,7 +50,7 @@ class BookSalesTest extends TestCase
             'stock' => 5,
         ]);
 
-        $response = $this->post(route('sales.store'), [
+        $response = $this->postJson('/api/checkout', [
             'customer_name' => 'Pelanggan Contoh',
             'customer_email' => 'pelanggan@example.test',
             'customer_phone' => '08123456789',
@@ -60,12 +60,18 @@ class BookSalesTest extends TestCase
             ],
         ]);
 
-        $sale = Sale::query()->firstOrFail();
-        $response->assertRedirect(route('sales.show', $sale->reference));
+        $response->assertCreated()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.total', 60000)
+            ->assertJsonPath('data.items.0.quantity', 2);
+
+        $reference = $response->json('data.reference');
+        $this->getJson("/api/orders/{$reference}")
+            ->assertOk()
+            ->assertJsonPath('data.reference', $reference);
+
         $this->assertSame(3, $book->fresh()->stock);
-        $this->assertSame(60000, $sale->total);
         $this->assertDatabaseHas('sale_items', [
-            'sale_id' => $sale->id,
             'book_id' => $book->id,
             'quantity' => 2,
             'unit_price' => 30000,
@@ -77,71 +83,93 @@ class BookSalesTest extends TestCase
         $firstBook = Book::factory()->create(['stock' => 5, 'price' => 20000]);
         $secondBook = Book::factory()->create(['stock' => 1]);
 
-        $this->from('/')
-            ->post(route('sales.store'), [
-                'customer_name' => 'Pelanggan Contoh',
-                'customer_phone' => '08123456789',
-                'payment_method' => 'cash',
-                'items' => [
-                    ['book_id' => $firstBook->id, 'quantity' => 2],
-                    ['book_id' => $secondBook->id, 'quantity' => 2],
-                ],
-            ])
-            ->assertRedirect('/')
-            ->assertSessionHasErrors('items');
+        $this->postJson('/api/checkout', [
+            'customer_name' => 'Pelanggan Contoh',
+            'customer_phone' => '08123456789',
+            'payment_method' => 'cash',
+            'items' => [
+                ['book_id' => $firstBook->id, 'quantity' => 2],
+                ['book_id' => $secondBook->id, 'quantity' => 2],
+            ],
+        ])->assertUnprocessable()
+            ->assertJsonPath('success', false)
+            ->assertJsonStructure(['errors' => ['items']]);
 
         $this->assertDatabaseCount('sales', 0);
         $this->assertSame(5, $firstBook->fresh()->stock);
         $this->assertSame(1, $secondBook->fresh()->stock);
     }
 
-    public function test_book_management_requires_admin_and_validates_book_data(): void
+    public function test_book_resource_requires_admin_for_writes_and_supports_crud(): void
     {
         $author = Author::factory()->create(['name' => 'Author Contoh']);
-
-        $this->get(route('admin.books.index'))
-            ->assertRedirect(route('login'));
-
-        $this->actingAs(User::factory()->create(['is_admin' => true]))
-            ->post(route('admin.books.store'), [
-                'title' => 'Buku Admin',
-                'author_id' => $author->id,
-                'genre' => 'Fiksi',
-                'description' => 'Deskripsi buku.',
-                'price' => 50000,
-                'stock' => 10,
-                'is_active' => '1',
-            ])
-            ->assertRedirect(route('admin.books.index'));
-
-        $this->assertDatabaseHas('books', [
+        $body = [
             'title' => 'Buku Admin',
             'author_id' => $author->id,
+            'genre' => 'Fiksi',
+            'description' => 'Deskripsi buku.',
             'price' => 50000,
             'stock' => 10,
             'is_active' => true,
+        ];
+
+        $this->postJson('/api/books', $body)->assertUnauthorized();
+
+        Sanctum::actingAs(User::factory()->create(['is_admin' => true]));
+        $created = $this->postJson('/api/books', $body)
+            ->assertCreated()
+            ->assertJsonPath('data.author', 'Author Contoh');
+
+        $bookId = $created->json('data.id');
+        $this->getJson("/api/books/{$bookId}")
+            ->assertOk()
+            ->assertJsonPath('data.title', 'Buku Admin');
+
+        $this->putJson("/api/books/{$bookId}", [
+            ...$body,
+            'title' => 'Buku Diperbarui',
+        ])->assertOk()
+            ->assertJsonPath('data.title', 'Buku Diperbarui');
+
+        $this->patchJson("/api/books/{$bookId}", ['title' => 'Buku Parsial'])
+            ->assertOk()
+            ->assertJsonPath('data.title', 'Buku Parsial');
+
+        $this->assertDatabaseHas('books', [
+            'id' => $bookId,
+            'author_id' => $author->id,
+            'author' => 'Author Contoh',
+            'title' => 'Buku Parsial',
         ]);
+
+        $this->deleteJson("/api/books/{$bookId}")
+            ->assertOk()
+            ->assertJsonPath('success', true);
     }
 
-    public function test_admin_can_log_in_and_log_out(): void
+    public function test_admin_can_log_in_and_log_out_with_a_sanctum_token(): void
     {
-        $admin = User::factory()->create([
+        User::factory()->create([
             'email' => 'admin@example.test',
             'password' => 'a-strong-password',
             'is_admin' => true,
         ]);
 
-        $this->post(route('login.store'), [
+        $login = $this->postJson('/api/login', [
             'email' => ' ADMIN@EXAMPLE.TEST ',
             'password' => 'a-strong-password',
-        ])->assertRedirect(route('admin.books.index'));
+        ])->assertOk()
+            ->assertJsonPath('success', true);
 
-        $this->assertAuthenticatedAs($admin);
+        $token = $login->json('data.token');
 
-        $this->post(route('logout'))
-            ->assertRedirect(route('home'));
+        $this->withToken($token)->getJson('/api/user')
+            ->assertOk()
+            ->assertJsonPath('email', 'admin@example.test');
 
-        $this->assertGuest();
+        $this->withToken($token)->postJson('/api/logout')
+            ->assertOk()
+            ->assertJsonPath('success', true);
     }
 
     public function test_admin_can_confirm_payment_and_cancel_pending_orders_safely(): void
@@ -149,56 +177,54 @@ class BookSalesTest extends TestCase
         $admin = User::factory()->create(['is_admin' => true]);
         $book = Book::factory()->create(['stock' => 5, 'price' => 25000]);
 
-        $this->post(route('sales.store'), [
+        $paidResponse = $this->postJson('/api/checkout', [
             'customer_name' => 'Pelanggan Contoh',
             'customer_phone' => '08123456789',
             'payment_method' => 'cash',
             'items' => [['book_id' => $book->id, 'quantity' => 2]],
-        ]);
-        $paidSale = Sale::query()->firstOrFail();
+        ])->assertCreated();
+        $paidSale = Sale::query()->where('reference', $paidResponse->json('data.reference'))->firstOrFail();
 
-        $this->actingAs($admin)
-            ->post(route('admin.sales.paid', $paidSale))
-            ->assertSessionHas('status');
+        Sanctum::actingAs($admin);
+        $this->postJson(route('admin.sales.paid', $paidSale))
+            ->assertOk()
+            ->assertJsonPath('data.payment_status', 'paid');
 
-        $this->assertSame('paid', $paidSale->fresh()->payment_status);
         $this->assertSame(3, $book->fresh()->stock);
 
-        $this->post(route('sales.store'), [
+        $cancelResponse = $this->postJson('/api/checkout', [
             'customer_name' => 'Pelanggan Kedua',
             'customer_phone' => '08123456789',
             'payment_method' => 'bank_transfer',
             'items' => [['book_id' => $book->id, 'quantity' => 1]],
-        ]);
-        $pendingSale = Sale::query()->where('payment_status', 'pending')->firstOrFail();
+        ])->assertCreated();
+        $pendingSale = Sale::query()->where('reference', $cancelResponse->json('data.reference'))->firstOrFail();
 
-        $this->post(route('admin.sales.cancel', $pendingSale))
-            ->assertSessionHas('status');
-        $this->assertSame(3, $book->fresh()->stock);
-
-        $this->post(route('admin.sales.cancel', $pendingSale))
-            ->assertSessionHasErrors('sale');
-        $this->assertSame(3, $book->fresh()->stock);
-
-        $this->get(route('admin.reports.index'))
+        $this->postJson(route('admin.sales.cancel', $pendingSale))
             ->assertOk()
-            ->assertSee('Rp50.000')
-            ->assertSee('Laporan Penjualan');
+            ->assertJsonPath('data.payment_status', 'cancelled');
+        $this->assertSame(3, $book->fresh()->stock);
+
+        $this->postJson(route('admin.sales.cancel', $pendingSale))
+            ->assertStatus(409);
+
+        $this->getJson(route('admin.reports.index'))
+            ->assertOk()
+            ->assertJsonPath('data.paid_revenue', 50000)
+            ->assertJsonPath('data.paid_count', 1);
     }
 
     public function test_customer_cannot_create_orders_for_inactive_books(): void
     {
         $book = Book::factory()->create(['is_active' => false, 'stock' => 5]);
 
-        $this->from('/')
-            ->post(route('sales.store'), [
-                'customer_name' => 'Pelanggan Contoh',
-                'customer_phone' => '08123456789',
-                'payment_method' => 'cash',
-                'items' => [['book_id' => $book->id, 'quantity' => 1]],
-            ])
-            ->assertRedirect('/')
-            ->assertSessionHasErrors('items');
+        $this->postJson('/api/checkout', [
+            'customer_name' => 'Pelanggan Contoh',
+            'customer_phone' => '08123456789',
+            'payment_method' => 'cash',
+            'items' => [['book_id' => $book->id, 'quantity' => 1]],
+        ])->assertUnprocessable()
+            ->assertJsonStructure(['errors' => ['items']]);
 
         $this->assertDatabaseCount('sales', 0);
         $this->assertSame(5, $book->fresh()->stock);
@@ -206,14 +232,14 @@ class BookSalesTest extends TestCase
 
     public function test_report_accepts_a_single_start_date_filter(): void
     {
-        $admin = User::factory()->create(['is_admin' => true]);
+        Sanctum::actingAs(User::factory()->create(['is_admin' => true]));
 
-        $this->actingAs($admin)
-            ->get(route('admin.reports.index', [
-                'start_date' => today()->startOfMonth()->toDateString(),
-            ]))
+        $this->getJson(route('admin.reports.index', [
+            'start_date' => today()->startOfMonth()->toDateString(),
+        ]))
             ->assertOk()
-            ->assertSee('Laporan Penjualan');
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.start_date', today()->startOfMonth()->toDateString());
     }
 
     public function test_non_admin_accounts_cannot_sign_in_or_access_admin_routes(): void
@@ -223,18 +249,12 @@ class BookSalesTest extends TestCase
             'password' => 'a-strong-password',
         ]);
 
-        $this->post(route('login.store'), [
+        $this->postJson('/api/login', [
             'email' => 'customer@example.test',
             'password' => 'a-strong-password',
-        ])->assertSessionHasErrors('email');
+        ])->assertUnauthorized();
 
-        $this->actingAs($user)
-            ->get(route('admin.books.index'))
-            ->assertForbidden();
-
-        $this->post(route('logout'))
-            ->assertRedirect(route('home'));
-
-        $this->assertGuest();
+        Sanctum::actingAs($user);
+        $this->getJson(route('admin.books.index'))->assertForbidden();
     }
 }

@@ -4,97 +4,163 @@ namespace App\Http\Controllers;
 
 use App\Models\Author;
 use App\Models\Book;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
+use Illuminate\Support\Facades\Validator;
 
 class BookController extends Controller
 {
-    public function catalog(): View
+    public function index(): JsonResponse
     {
-        return view('catalog.home', [
-            'books' => Book::query()
-                ->with('authorRecord')
-                ->where('is_active', true)
-                ->orderBy('title')
-                ->get(),
+        return response()->json([
+            'success' => true,
+            'message' => 'Get All Resource',
+            'data' => Book::all(),
         ]);
     }
 
-    public function index(): View
+    public function store(Request $request): JsonResponse
     {
-        return view('admin.books.index', [
-            'books' => Book::query()
-                ->with('authorRecord')
-                ->orderBy('title')
-                ->paginate(15),
+        $validator = Validator::make($request->all(), $this->rules());
+
+        if ($validator->fails()) {
+            return $this->validationError($validator->errors()->toArray());
+        }
+
+        $data = $this->bookData($validator->validated());
+        $book = Book::create($data);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Resource created successfully',
+            'data' => $book,
+        ], 201);
+    }
+
+    public function show(int $id): JsonResponse
+    {
+        $book = Book::find($id);
+
+        if ($book === null) {
+            return $this->notFound();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Resource retrieved successfully',
+            'data' => $book,
         ]);
     }
 
-    public function create(): View
+    public function update(Request $request, int $id): JsonResponse
     {
-        return view('admin.books.form', [
-            'book' => new Book,
-            'authors' => Author::query()->orderBy('name')->get(),
+        $book = Book::find($id);
+
+        if ($book === null) {
+            return $this->notFound();
+        }
+
+        $validator = Validator::make($request->all(), $this->rules($request->isMethod('patch')));
+
+        if ($validator->fails()) {
+            return $this->validationError($validator->errors()->toArray());
+        }
+
+        $book->update($this->bookData($validator->validated()));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Resource updated successfully',
+            'data' => $book,
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function destroy(int $id): JsonResponse
     {
-        Book::query()->create($this->validatedBook($request));
+        $book = Book::find($id);
 
-        return redirect()->route('admin.books.index')->with('status', 'Buku berhasil ditambahkan.');
-    }
+        if ($book === null) {
+            return $this->notFound();
+        }
 
-    public function edit(Book $book): View
-    {
-        return view('admin.books.form', [
-            'book' => $book,
-            'authors' => Author::query()->orderBy('name')->get(),
-        ]);
-    }
-
-    public function update(Request $request, Book $book): RedirectResponse
-    {
-        $book->update($this->validatedBook($request));
-
-        return redirect()->route('admin.books.index')->with('status', 'Buku berhasil diperbarui.');
-    }
-
-    public function destroy(Book $book): RedirectResponse
-    {
         if ($book->saleItems()->exists()) {
-            return back()->withErrors([
-                'book' => 'Buku yang sudah pernah dipesan tidak dapat dihapus.',
-            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Books with existing orders cannot be deleted',
+                'data' => null,
+            ], 409);
         }
 
         $book->delete();
 
-        return redirect()->route('admin.books.index')->with('status', 'Buku berhasil dihapus.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Resource deleted successfully',
+            'data' => null,
+        ]);
     }
 
     /**
-     * @return array{title: string, author_id: int, author: string, genre: string, description: ?string, price: int, stock: int, is_active: bool}
+     * @return array<string, array<int, string>>
      */
-    private function validatedBook(Request $request): array
+    private function rules(bool $partial = false): array
     {
-        $book = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'author_id' => ['required', 'integer', 'exists:authors,id'],
-            'genre' => ['required', 'string', 'max:100'],
-            'description' => ['nullable', 'string', 'max:5000'],
-            'price' => ['required', 'integer', 'min:1000', 'max:1000000000'],
-            'stock' => ['required', 'integer', 'min:0', 'max:1000000'],
-            'is_active' => ['required', 'boolean'],
-        ]);
+        return [
+            'title' => [$partial ? 'sometimes' : 'required', 'string', 'max:255'],
+            'author_id' => [
+                ...($partial ? ['sometimes'] : []),
+                'nullable',
+                'integer',
+                'exists:authors,id',
+            ],
+            'author' => [
+                ...($partial ? ['sometimes'] : ['required_without:author_id']),
+                'nullable',
+                'string',
+                'max:255',
+            ],
+            'genre' => [$partial ? 'sometimes' : 'required', 'string', 'max:255'],
+            'description' => [$partial ? 'sometimes' : 'nullable', 'nullable', 'string'],
+            'price' => [$partial ? 'sometimes' : 'required', 'integer', 'min:0'],
+            'stock' => [$partial ? 'sometimes' : 'required', 'integer', 'min:0'],
+            'is_active' => ['sometimes', 'boolean'],
+        ];
+    }
 
-        $book['author_id'] = (int) $book['author_id'];
-        $book['author'] = Author::query()->findOrFail($book['author_id'])->name;
-        $book['price'] = (int) $book['price'];
-        $book['stock'] = (int) $book['stock'];
-        $book['is_active'] = $request->boolean('is_active');
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function bookData(array $data): array
+    {
+        if (isset($data['author_id'])) {
+            $data['author'] = Author::findOrFail($data['author_id'])->name;
+        } elseif (array_key_exists('author', $data)) {
+            $data['author_id'] = null;
+        }
 
-        return $book;
+        return $data;
+    }
+
+    /**
+     * @param  array<string, array<int, string>>  $errors
+     */
+    private function validationError(array $errors): JsonResponse
+    {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation failed',
+            'data' => null,
+            'errors' => $errors,
+        ], 422);
+    }
+
+    private function notFound(): JsonResponse
+    {
+        return response()->json([
+            'success' => false,
+            'message' => 'Resource not found',
+            'data' => null,
+        ], 404);
     }
 }

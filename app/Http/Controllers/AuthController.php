@@ -2,49 +2,71 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\RedirectResponse;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
-use Illuminate\View\View;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
-    public function create(): View
+    public function create(): JsonResponse
     {
-        return view('auth.login');
+        return response()->json([
+            'success' => true,
+            'message' => 'Send credentials to POST /api/login',
+            'data' => null,
+        ]);
     }
 
-    /**
-     * @throws ValidationException
-     */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): JsonResponse
     {
-        $credentials = $request->validate([
+        $validator = Validator::make($request->all(), [
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
         ]);
-        $credentials['email'] = strtolower(trim($credentials['email']));
-        $credentials['is_admin'] = true;
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
-            throw ValidationException::withMessages([
-                'email' => __('auth.failed'),
-            ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'data' => null,
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
-        $request->session()->regenerate();
+        $credentials = $validator->validated();
+        $email = strtolower(trim($credentials['email']));
+        $user = User::query()->where('email', $email)->where('is_admin', true)->first();
 
-        return redirect()->intended(route('admin.books.index'));
+        if ($user === null || ! Hash::check($credentials['password'], $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The provided credentials are incorrect.',
+                'data' => null,
+            ], 401);
+        }
+
+        $token = $user->createToken('api')->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Authenticated successfully',
+            'data' => [
+                'user' => $user->only(['id', 'name', 'email']),
+                'token' => $token,
+            ],
+        ]);
     }
 
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request): JsonResponse
     {
-        Auth::logout();
+        $request->user()->currentAccessToken()?->delete();
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return redirect()->route('home');
+        return response()->json([
+            'success' => true,
+            'message' => 'Logged out successfully',
+            'data' => null,
+        ]);
     }
 }
