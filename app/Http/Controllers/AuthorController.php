@@ -10,7 +10,10 @@ class AuthorController extends Controller
     public function index(): View
     {
         return view('authors.index', [
-            'authors' => Author::all(),
+            'authors' => Author::query()
+                ->withCount('books')
+                ->orderBy('name')
+                ->get(),
         ]);
     }
 }

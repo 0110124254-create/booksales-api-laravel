@@ -19,7 +19,12 @@
             </label>
             <label class="field">
                 Author
-                <input type="text" name="author" value="{{ old('author', $book->author) }}" maxlength="255" required>
+                <select name="author_id" required>
+                    <option value="">Pilih author</option>
+                    @foreach ($authors as $author)
+                        <option value="{{ $author->id }}" @selected((string) old('author_id', $book->author_id) === (string) $author->id)>{{ $author->name }}</option>
+                    @endforeach
+                </select>
             </label>
             <label class="field">
                 Genre

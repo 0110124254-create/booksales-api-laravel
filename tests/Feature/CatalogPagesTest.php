@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -24,6 +25,8 @@ class CatalogPagesTest extends TestCase
 
     public function test_author_page_displays_five_authors(): void
     {
+        $this->seed(DatabaseSeeder::class);
+
         $response = $this->get('/authors');
 
         $response->assertOk()
@@ -32,7 +35,8 @@ class CatalogPagesTest extends TestCase
             ->assertSee('Tere Liye')
             ->assertSee('Dewi Lestari')
             ->assertSee('Ahmad Fuadi')
-            ->assertSee('Pramoedya Ananta Toer');
+            ->assertSee('Pramoedya Ananta Toer')
+            ->assertSee('Jumlah Buku');
     }
 
     public function test_home_page_links_to_both_catalog_pages(): void

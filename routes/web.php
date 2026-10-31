@@ -9,6 +9,7 @@ use App\Http\Controllers\SaleController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [BookController::class, 'catalog'])->name('home');
+Route::get('/books', [BookController::class, 'catalog'])->name('books.index');
 Route::get('/genres', [GenreController::class, 'index'])->name('genres.index');
 Route::get('/authors', [AuthorController::class, 'index'])->name('authors.index');
 

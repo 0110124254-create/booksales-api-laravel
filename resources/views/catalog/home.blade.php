@@ -46,7 +46,7 @@
                                 <tr>
                                     <td>
                                         <span class="name">{{ $book->title }}</span><br>
-                                        <span class="muted">{{ $book->author }}</span>
+                                        <span class="muted">{{ $book->authorRecord?->name ?? $book->author }}</span>
                                         @if ($book->description)
                                             <br>{{ $book->description }}
                                         @endif

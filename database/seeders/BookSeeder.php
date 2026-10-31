@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Author;
 use App\Models\Book;
 use Illuminate\Database\Seeder;
 
@@ -56,7 +57,16 @@ class BookSeeder extends Seeder
         ];
 
         foreach ($books as $book) {
-            Book::query()->firstOrCreate(['title' => $book['title']], $book);
+            $author = Author::query()->where('name', $book['author'])->firstOrFail();
+            $book['author_id'] = $author->id;
+            $storedBook = Book::query()->firstOrCreate(['title' => $book['title']], $book);
+
+            if ($storedBook->author_id === null) {
+                $storedBook->update([
+                    'author_id' => $author->id,
+                    'author' => $author->name,
+                ]);
+            }
         }
     }
 }

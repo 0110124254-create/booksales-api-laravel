@@ -2,41 +2,23 @@
 
 namespace App\Models;
 
-class Author
+use Database\Factories\AuthorFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+#[Fillable(['name', 'nationality', 'description'])]
+class Author extends Model
 {
-    public static function all(): array
+    /** @use HasFactory<AuthorFactory> */
+    use HasFactory;
+
+    /**
+     * @return HasMany<Book, $this>
+     */
+    public function books(): HasMany
     {
-        return [
-            [
-                'id' => 1,
-                'name' => 'Andrea Hirata',
-                'nationality' => 'Indonesia',
-                'description' => 'Penulis novel Laskar Pelangi.',
-            ],
-            [
-                'id' => 2,
-                'name' => 'Tere Liye',
-                'nationality' => 'Indonesia',
-                'description' => 'Penulis novel Bumi dan Hujan.',
-            ],
-            [
-                'id' => 3,
-                'name' => 'Dewi Lestari',
-                'nationality' => 'Indonesia',
-                'description' => 'Penulis serial novel Supernova.',
-            ],
-            [
-                'id' => 4,
-                'name' => 'Ahmad Fuadi',
-                'nationality' => 'Indonesia',
-                'description' => 'Penulis novel Negeri 5 Menara.',
-            ],
-            [
-                'id' => 5,
-                'name' => 'Pramoedya Ananta Toer',
-                'nationality' => 'Indonesia',
-                'description' => 'Penulis Tetralogi Buru.',
-            ],
-        ];
+        return $this->hasMany(Book::class, 'author_id');
     }
 }

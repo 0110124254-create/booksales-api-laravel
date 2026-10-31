@@ -16,17 +16,21 @@
                         <th scope="col">Nama Author</th>
                         <th scope="col">Kebangsaan</th>
                         <th scope="col">Keterangan</th>
+                        <th scope="col">Jumlah Buku</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($authors as $author)
+                    @forelse ($authors as $author)
                         <tr>
-                            <td class="number">{{ $author['id'] }}</td>
-                            <td class="name">{{ $author['name'] }}</td>
-                            <td>{{ $author['nationality'] }}</td>
-                            <td>{{ $author['description'] }}</td>
+                            <td class="number">{{ $author->id }}</td>
+                            <td class="name">{{ $author->name }}</td>
+                            <td>{{ $author->nationality }}</td>
+                            <td>{{ $author->description }}</td>
+                            <td>{{ $author->books_count }}</td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr><td colspan="5">Belum ada data author.</td></tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>

@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\Author;
 use App\Models\Book;
 use App\Models\Sale;
 use App\Models\User;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -25,6 +27,20 @@ class BookSalesTest extends TestCase
             ->assertSee('Buku Contoh')
             ->assertSee('Rp45.000')
             ->assertSee(route('sales.store'));
+
+        $this->get(route('books.index'))
+            ->assertOk()
+            ->assertSee('Buku Contoh');
+    }
+
+    public function test_database_seeder_creates_five_authors_and_five_linked_books(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->assertDatabaseCount('authors', 5);
+        $this->assertDatabaseCount('books', 5);
+        $this->assertSame(5, Book::query()->whereNotNull('author_id')->count());
+        $this->assertSame(1, Author::query()->where('name', 'Andrea Hirata')->firstOrFail()->books()->count());
     }
 
     public function test_checkout_records_order_and_decreases_stock(): void
@@ -81,13 +97,15 @@ class BookSalesTest extends TestCase
 
     public function test_book_management_requires_admin_and_validates_book_data(): void
     {
+        $author = Author::factory()->create(['name' => 'Author Contoh']);
+
         $this->get(route('admin.books.index'))
             ->assertRedirect(route('login'));
 
         $this->actingAs(User::factory()->create(['is_admin' => true]))
             ->post(route('admin.books.store'), [
                 'title' => 'Buku Admin',
-                'author' => 'Author Contoh',
+                'author_id' => $author->id,
                 'genre' => 'Fiksi',
                 'description' => 'Deskripsi buku.',
                 'price' => 50000,
@@ -98,6 +116,7 @@ class BookSalesTest extends TestCase
 
         $this->assertDatabaseHas('books', [
             'title' => 'Buku Admin',
+            'author_id' => $author->id,
             'price' => 50000,
             'stock' => 10,
             'is_active' => true,

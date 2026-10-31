@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Author;
 use App\Models\Book;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,7 @@ class BookController extends Controller
     {
         return view('catalog.home', [
             'books' => Book::query()
+                ->with('authorRecord')
                 ->where('is_active', true)
                 ->orderBy('title')
                 ->get(),
@@ -22,13 +24,19 @@ class BookController extends Controller
     public function index(): View
     {
         return view('admin.books.index', [
-            'books' => Book::query()->orderBy('title')->paginate(15),
+            'books' => Book::query()
+                ->with('authorRecord')
+                ->orderBy('title')
+                ->paginate(15),
         ]);
     }
 
     public function create(): View
     {
-        return view('admin.books.form', ['book' => new Book]);
+        return view('admin.books.form', [
+            'book' => new Book,
+            'authors' => Author::query()->orderBy('name')->get(),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -40,7 +48,10 @@ class BookController extends Controller
 
     public function edit(Book $book): View
     {
-        return view('admin.books.form', ['book' => $book]);
+        return view('admin.books.form', [
+            'book' => $book,
+            'authors' => Author::query()->orderBy('name')->get(),
+        ]);
     }
 
     public function update(Request $request, Book $book): RedirectResponse
@@ -64,13 +75,13 @@ class BookController extends Controller
     }
 
     /**
-     * @return array{title: string, author: string, genre: string, description: ?string, price: int, stock: int, is_active: bool}
+     * @return array{title: string, author_id: int, author: string, genre: string, description: ?string, price: int, stock: int, is_active: bool}
      */
     private function validatedBook(Request $request): array
     {
         $book = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'author' => ['required', 'string', 'max:255'],
+            'author_id' => ['required', 'integer', 'exists:authors,id'],
             'genre' => ['required', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:5000'],
             'price' => ['required', 'integer', 'min:1000', 'max:1000000000'],
@@ -78,6 +89,8 @@ class BookController extends Controller
             'is_active' => ['required', 'boolean'],
         ]);
 
+        $book['author_id'] = (int) $book['author_id'];
+        $book['author'] = Author::query()->findOrFail($book['author_id'])->name;
         $book['price'] = (int) $book['price'];
         $book['stock'] = (int) $book['stock'];
         $book['is_active'] = $request->boolean('is_active');

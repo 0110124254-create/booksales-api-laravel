@@ -399,7 +399,7 @@
         <div class="topbar-inner">
             <a class="brand" href="{{ route('home') }}">Book Sales</a>
             <nav aria-label="Navigasi utama">
-                <a href="{{ route('home') }}" @if (request()->routeIs('home')) aria-current="page" @endif>Buku</a>
+                <a href="{{ route('books.index') }}" @if (request()->routeIs('home', 'books.*')) aria-current="page" @endif>Buku</a>
                 <a href="{{ route('genres.index') }}" @if (request()->routeIs('genres.*')) aria-current="page" @endif>Genre</a>
                 <a href="{{ route('authors.index') }}" @if (request()->routeIs('authors.*')) aria-current="page" @endif>Author</a>
                 @auth

@@ -26,9 +26,11 @@ Untuk pemeriksaan otomatis, jalankan `php artisan test`. Akun dan kata sandi adm
 
 ### Local development
 
-SQLite is the default database. Run `php artisan migrate --seed` to create the tables and sample books, then create an administrator with `php artisan app:create-admin`. Public registration is disabled.
+SQLite is the default database. Run `php artisan migrate --seed` to create the tables and seed five authors and five books linked by a foreign key. Then create an administrator with `php artisan app:create-admin`. Public registration is disabled.
 
 Customers can order available books from the home page and select cash or bank transfer. Orders reserve stock until the admin confirms payment or cancels the order. The payment gateway is not connected; transfer instructions must be provided by the store operator.
+
+The book catalog is available at `/books` (also shown on the home page), and the author catalog is available at `/authors`.
 
 Run the test suite with `php artisan test`.
 

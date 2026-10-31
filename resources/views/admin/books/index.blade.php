@@ -27,7 +27,7 @@
                     @forelse ($books as $book)
                         <tr>
                             <td class="name">{{ $book->title }}</td>
-                            <td>{{ $book->author }}</td>
+                            <td>{{ $book->authorRecord?->name ?? $book->author }}</td>
                             <td>{{ $book->genre }}</td>
                             <td>Rp{{ number_format($book->price, 0, ',', '.') }}</td>
                             <td>{{ $book->stock }}</td>
