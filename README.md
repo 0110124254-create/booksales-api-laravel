@@ -2,13 +2,31 @@
 
 The application includes a book catalog, customer checkout, manual payment confirmation, administrator book management, and sales reports.
 
-### Local setup
+### Petunjuk menjalankan untuk dosen (Windows)
 
-1. Install PHP dependencies with `composer install`.
-2. Configure `.env` for the database in use. SQLite is the default.
-3. Run `php artisan migrate --seed` to create the tables and sample books.
-4. Create an administrator with `php artisan app:create-admin`. The command prompts for the name, email, and a password of at least 12 characters; public registration is disabled.
-5. Start the server with `php artisan serve`, then open the URL shown by Artisan.
+Repository GitHub berisi kode aplikasi, bukan database lokal atau akun admin. Untuk mencoba aplikasi, dosen dapat membuat database dan akun admin sendiri dengan langkah berikut:
+
+```powershell
+git clone https://github.com/0110124254-create/booksales-api-laravel.git
+cd booksales-api-laravel
+composer install
+Copy-Item .env.example .env
+New-Item -ItemType File -Path database\database.sqlite -Force
+php artisan key:generate
+php artisan migrate --seed
+php artisan app:create-admin
+php artisan serve
+```
+
+Saat `app:create-admin` meminta nama dan email, isi sesuai keinginan. Buat kata sandi minimal 12 karakter dan ketik ulang sama persis pada konfirmasi. Input kata sandi **tidak menampilkan karakter atau tanda bintang** di terminal; itu normal. Setelah server berjalan, buka alamat yang ditampilkan Artisan (biasanya `http://127.0.0.1:8000`), lalu pilih **Admin** untuk login.
+
+Jika repository sudah diunduh, dosen dapat menjalankan perintah mulai dari `composer install` di folder proyek. Jangan jalankan `Copy-Item .env.example .env` jika file `.env` lokal sudah ada, agar konfigurasi tidak tertimpa.
+
+Untuk pemeriksaan otomatis, jalankan `php artisan test`. Akun dan kata sandi admin bersifat lokal, tidak dibagikan lewat GitHub; jangan menyimpan kata sandi di repository publik.
+
+### Local development
+
+SQLite is the default database. Run `php artisan migrate --seed` to create the tables and sample books, then create an administrator with `php artisan app:create-admin`. Public registration is disabled.
 
 Customers can order available books from the home page and select cash or bank transfer. Orders reserve stock until the admin confirms payment or cancels the order. The payment gateway is not connected; transfer instructions must be provided by the store operator.
 
