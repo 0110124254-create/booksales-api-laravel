@@ -1,3 +1,19 @@
+## Book Sales
+
+The application includes a book catalog, customer checkout, manual payment confirmation, administrator book management, and sales reports.
+
+### Local setup
+
+1. Install PHP dependencies with `composer install`.
+2. Configure `.env` for the database in use. SQLite is the default.
+3. Run `php artisan migrate --seed` to create the tables and sample books.
+4. Create an administrator with `php artisan app:create-admin`. The command prompts for the name, email, and a password of at least 12 characters; public registration is disabled.
+5. Start the server with `php artisan serve`, then open the URL shown by Artisan.
+
+Customers can order available books from the home page and select cash or bank transfer. Orders reserve stock until the admin confirms payment or cancels the order. The payment gateway is not connected; transfer instructions must be provided by the store operator.
+
+Run the test suite with `php artisan test`.
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">

@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class CatalogPagesTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_genre_page_displays_five_genres(): void
     {
         $response = $this->get('/genres');
