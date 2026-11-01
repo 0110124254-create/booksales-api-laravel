@@ -45,6 +45,8 @@ class CatalogPagesTest extends TestCase
             ->assertOk()
             ->assertViewIs('catalog.home')
             ->assertSeeText('Buku API')
+            ->assertSee('alt="Sampul buku Buku API"', false)
+            ->assertSee('src="'.asset('images/books/book-default.svg').'"', false)
             ->assertSee('href="'.route('catalog.genres.index').'"', false)
             ->assertSee('href="'.route('catalog.authors.index').'"', false);
 
@@ -52,6 +54,19 @@ class CatalogPagesTest extends TestCase
             ->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonFragment(['title' => 'Buku API']);
+    }
+
+    public function test_book_catalog_displays_local_cover_images_for_seeded_books(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('src="'.asset('images/books/belajar-sains-dasar.svg').'"', false)
+            ->assertSee('src="'.asset('images/books/catatan-kehidupan.svg').'"', false)
+            ->assertSee('src="'.asset('images/books/mengenal-teknologi.svg').'"', false)
+            ->assertSee('src="'.asset('images/books/petualangan-di-pulau.svg').'"', false)
+            ->assertSee('src="'.asset('images/books/sejarah-nusantara.svg').'"', false);
     }
 
     public function test_genre_view_displays_five_records_as_model_arrays(): void

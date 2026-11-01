@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600" fill="none">
+    <defs>
+        <linearGradient id="background" x1="25" y1="19" x2="369" y2="582" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#C9A76B"/>
+            <stop offset="1" stop-color="#735342"/>
+        </linearGradient>
+    </defs>
+    <path fill="url(#background)" d="M0 0h400v600H0z"/>
+    <path d="M0 368c54-36 107-51 200-45 89 6 143-2 200-36v196H0V368Z" fill="#425347"/>
+    <path d="M0 424c82-29 142-34 200-29 79 7 134 0 200-33v121H0v-59Z" fill="#304238"/>
+    <circle cx="304" cy="181" r="48" fill="#F4DBA3" fill-opacity=".76"/>
+    <path d="M97 354h207v-22H97v22Zm17-22 16-44h141l17 44H114Zm20-49 14-35h106l17 35H134Zm19-40 12-29h63l12 29h-87Zm26-34 18-34 19 34h-37Z" fill="#E5C58A"/>
+    <path d="M93 355v29m41-29v29m43-29v29m43-29v29m43-29v29m41-29v29M119 388h164" stroke="#E5C58A" stroke-width="7"/>
+    <path d="M74 423c29-25 56-28 85-7m82-14c32-24 60-22 88 1" stroke="#8D9970" stroke-linecap="round" stroke-width="5"/>
+    <text x="34" y="69" fill="#F6E2B8" font-family="Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="3">RUANG BACA · SEJARAH</text>
+    <text x="34" y="126" fill="#FFF8E8" font-family="Georgia,serif" font-size="31" font-weight="700">Sejarah</text>
+    <text x="34" y="164" fill="#FFF8E8" font-family="Georgia,serif" font-size="31" font-weight="700">Nusantara</text>
+    <text x="34" y="535" fill="#F6E2B8" font-family="Arial,sans-serif" font-size="14" letter-spacing="2">JEJAK TANAH AIR</text>
+    <path stroke="#F6E2B8" stroke-opacity=".6" d="M34 554h332"/>
+</svg>

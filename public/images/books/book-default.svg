@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600" fill="none">
+    <defs>
+        <linearGradient id="background" x1="18" y1="9" x2="370" y2="587" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#145247"/>
+            <stop offset="1" stop-color="#092D2A"/>
+        </linearGradient>
+    </defs>
+    <path fill="url(#background)" d="M0 0h400v600H0z"/>
+    <circle cx="200" cy="299" r="127" fill="#E5C58A" fill-opacity=".14"/>
+    <path d="M200 189c-55-39-107-36-145-12v174c47-23 96-20 145 13V189Zm0 0c55-39 107-36 145-12v174c-47-23-96-20-145 13V189Z" fill="#F5E9CE"/>
+    <path d="M200 190v174" stroke="#B98D59" stroke-width="4"/>
+    <path stroke="#B98D59" stroke-linecap="round" stroke-width="4" d="M76 220c25-10 48-10 73-3m-73 30c25-10 48-10 73-3m102-24c25-7 48-7 73 3m-73 27c25-7 48-7 73 3"/>
+    <text x="34" y="69" fill="#D9C08E" font-family="Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="3">RUANG BACA</text>
+    <text x="34" y="506" fill="#FFF9E9" font-family="Georgia,serif" font-size="30" font-weight="700">Cerita Baru</text>
+    <text x="34" y="540" fill="#D9C08E" font-family="Arial,sans-serif" font-size="14" letter-spacing="2">MENANTIMU DI SINI</text>
+</svg>

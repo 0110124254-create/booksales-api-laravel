@@ -6,6 +6,16 @@
 @section('title', 'Katalog Buku')
 
 @section('content')
+    @php
+        $bookCovers = [
+            'Belajar Sains Dasar' => 'belajar-sains-dasar.svg',
+            'Catatan Kehidupan' => 'catatan-kehidupan.svg',
+            'Mengenal Teknologi' => 'mengenal-teknologi.svg',
+            'Petualangan di Pulau' => 'petualangan-di-pulau.svg',
+            'Sejarah Nusantara' => 'sejarah-nusantara.svg',
+        ];
+    @endphp
+
     <section class="mx-auto grid max-w-7xl gap-10 px-5 py-14 sm:px-8 sm:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
         <div class="max-w-2xl">
             <p class="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-emerald-900">
@@ -66,15 +76,18 @@
             <div class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 @forelse ($books as $book)
                     <article class="group overflow-hidden rounded-3xl border border-stone-200 bg-stone-50 transition hover:-translate-y-1 hover:border-emerald-200 hover:shadow-lg hover:shadow-stone-900/5">
-                        <div class="flex min-h-48 flex-col justify-between bg-emerald-950 p-6 text-white">
-                            <span class="w-fit rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-emerald-100">{{ $book->genre }}</span>
-                            <div>
-                                <span class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">Ruang Baca · {{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
-                                <h3 class="mt-3 text-2xl font-black leading-tight">{{ $book->title }}</h3>
-                            </div>
-                        </div>
+                        <img
+                            src="{{ asset('images/books/'.($bookCovers[$book->title] ?? 'book-default.svg')) }}"
+                            alt="Sampul buku {{ $book->title }}"
+                            class="aspect-[3/4] w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                            width="400"
+                            height="600"
+                            loading="lazy"
+                        >
                         <div class="space-y-4 p-6">
                             <div>
+                                <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-900">{{ $book->genre }}</span>
+                                <h3 class="mt-4 text-xl font-black text-stone-950">{{ $book->title }}</h3>
                                 <p class="text-sm font-semibold text-stone-700">Oleh {{ $book->author }}</p>
                                 @if ($book->description)
                                     <p class="mt-2 text-sm leading-6 text-stone-600">{{ $book->description }}</p>

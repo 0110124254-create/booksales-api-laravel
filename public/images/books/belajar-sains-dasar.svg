@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600" fill="none">
+    <defs>
+        <linearGradient id="background" x1="30" y1="20" x2="370" y2="580" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#122D55"/>
+            <stop offset="1" stop-color="#071329"/>
+        </linearGradient>
+        <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="matrix(0 240 -235 0 200 265)" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#35B8BE" stop-opacity=".85"/>
+            <stop offset="1" stop-color="#35B8BE" stop-opacity="0"/>
+        </radialGradient>
+    </defs>
+    <path fill="url(#background)" d="M0 0h400v600H0z"/>
+    <path fill="url(#glow)" d="M0 20h400v400H0z"/>
+    <path stroke="#B8EEF0" stroke-opacity=".7" stroke-width="2" d="m93 265 76-62 69 60 70-89m-139 29 28 93 111-33"/>
+    <circle cx="93" cy="265" r="14" fill="#F6C85F"/>
+    <circle cx="169" cy="203" r="11" fill="#F28C6B"/>
+    <circle cx="238" cy="263" r="16" fill="#F6C85F"/>
+    <circle cx="308" cy="174" r="12" fill="#F28C6B"/>
+    <circle cx="197" cy="296" r="10" fill="#B8EEF0"/>
+    <circle cx="308" cy="263" r="10" fill="#B8EEF0"/>
+    <path d="M200 351c-22-29-64-30-78 3-12 30 12 57 78 101 66-44 90-71 78-101-14-33-56-32-78-3Z" fill="#F6C85F" fill-opacity=".92"/>
+    <text x="34" y="75" fill="#A9E3E4" font-family="Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="3">RUANG BACA · SAINS</text>
+    <text x="34" y="131" fill="#FFF9E9" font-family="Georgia,serif" font-size="31" font-weight="700">Belajar Sains</text>
+    <text x="34" y="169" fill="#FFF9E9" font-family="Georgia,serif" font-size="31" font-weight="700">Dasar</text>
+    <text x="34" y="533" fill="#B8EEF0" font-family="Arial,sans-serif" font-size="14" letter-spacing="2">MENGENAL DUNIA</text>
+    <path stroke="#B8EEF0" stroke-opacity=".45" d="M34 552h332"/>
+</svg>

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600" fill="none">
+    <defs>
+        <linearGradient id="background" x1="28" y1="17" x2="378" y2="593" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#242267"/>
+            <stop offset="1" stop-color="#10142B"/>
+        </linearGradient>
+        <linearGradient id="screen" x1="145" y1="234" x2="270" y2="421" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#78E4D1"/>
+            <stop offset="1" stop-color="#40A7C6"/>
+        </linearGradient>
+    </defs>
+    <path fill="url(#background)" d="M0 0h400v600H0z"/>
+    <circle cx="310" cy="100" r="85" fill="#796BD4" fill-opacity=".22"/>
+    <path stroke="#7D85D8" stroke-opacity=".5" stroke-width="2" d="M45 221h61l32-32h42m115 0h32l30-30m-247 227h51l31-31h51m102-26h34l27 27M75 110v42h49l25 24m151 161h47"/>
+    <circle cx="106" cy="221" r="5" fill="#78E4D1"/>
+    <circle cx="176" cy="189" r="5" fill="#78E4D1"/>
+    <circle cx="302" cy="189" r="5" fill="#F7C667"/>
+    <circle cx="133" cy="416" r="5" fill="#F7C667"/>
+    <circle cx="306" cy="337" r="5" fill="#78E4D1"/>
+    <rect x="132" y="214" width="136" height="226" rx="20" fill="#E9F3F4"/>
+    <rect x="142" y="232" width="116" height="181" rx="10" fill="url(#screen)"/>
+    <path d="M157 328 184 301l21 20 34-48" stroke="#F4F7E9" stroke-linecap="round" stroke-linejoin="round" stroke-width="7"/>
+    <circle cx="200" cy="426" r="5" fill="#313764"/>
+    <text x="34" y="69" fill="#9AEADD" font-family="Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="3">RUANG BACA · DIGITAL</text>
+    <text x="34" y="126" fill="#F6F4FF" font-family="Georgia,serif" font-size="32" font-weight="700">Mengenal</text>
+    <text x="34" y="164" fill="#F6F4FF" font-family="Georgia,serif" font-size="32" font-weight="700">Teknologi</text>
+    <text x="34" y="535" fill="#B9B8EB" font-family="Arial,sans-serif" font-size="14" letter-spacing="2">IDE UNTUK MASA DEPAN</text>
+    <path stroke="#9AEADD" stroke-opacity=".5" d="M34 554h332"/>
+</svg>

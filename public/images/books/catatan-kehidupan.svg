@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600" fill="none">
+    <defs>
+        <linearGradient id="background" x1="17" y1="27" x2="386" y2="568" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#E9CBA0"/>
+            <stop offset="1" stop-color="#B76F50"/>
+        </linearGradient>
+        <linearGradient id="page" x1="98" y1="255" x2="300" y2="470" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#FFF8E9"/>
+            <stop offset="1" stop-color="#F0DBB9"/>
+        </linearGradient>
+    </defs>
+    <path fill="url(#background)" d="M0 0h400v600H0z"/>
+    <circle cx="320" cy="126" r="80" fill="#F8E8C8" fill-opacity=".44"/>
+    <path d="M81 299c39-27 79-31 119-13v159c-41-17-80-14-119 13V299Z" fill="url(#page)"/>
+    <path d="M319 299c-39-27-79-31-119-13v159c41-17 80-14 119 13V299Z" fill="#F7EBD6"/>
+    <path stroke="#B98562" stroke-linecap="round" stroke-width="4" d="M98 326c28-14 54-17 80-10m-80 32c28-14 54-17 80-10m-80 32c28-14 54-17 80-10m106-44c-28-14-54-17-80-10m80 32c-28-14-54-17-80-10m80 32c-28-14-54-17-80-10"/>
+    <path d="M200 284v177" stroke="#B76F50" stroke-width="3"/>
+    <path d="M201 227c-9-53-44-78-91-77 5 48 32 77 91 77Zm0 17c10-55 44-81 92-80-5 50-32 79-92 80Z" fill="#365F52"/>
+    <path d="M199 270c-11-34-10-66 3-96" stroke="#365F52" stroke-linecap="round" stroke-width="5"/>
+    <text x="34" y="68" fill="#593B31" font-family="Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="3">RUANG BACA · REFLEKSI</text>
+    <text x="34" y="122" fill="#3D302A" font-family="Georgia,serif" font-size="32" font-weight="700">Catatan</text>
+    <text x="34" y="160" fill="#3D302A" font-family="Georgia,serif" font-size="32" font-weight="700">Kehidupan</text>
+    <text x="34" y="535" fill="#FFF8E9" font-family="Arial,sans-serif" font-size="14" letter-spacing="2">SEBUAH PERJALANAN</text>
+    <path stroke="#FFF8E9" stroke-opacity=".6" d="M34 554h332"/>
+</svg>

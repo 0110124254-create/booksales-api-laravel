@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600" fill="none">
+    <defs>
+        <linearGradient id="sky" x1="28" y1="12" x2="337" y2="516" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#F2B768"/>
+            <stop offset=".58" stop-color="#E7795C"/>
+            <stop offset="1" stop-color="#B7444D"/>
+        </linearGradient>
+        <linearGradient id="sea" x1="199" y1="314" x2="199" y2="514" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#397A83"/>
+            <stop offset="1" stop-color="#183C4F"/>
+        </linearGradient>
+    </defs>
+    <path fill="url(#sky)" d="M0 0h400v600H0z"/>
+    <circle cx="293" cy="206" r="67" fill="#FFE3A0" fill-opacity=".9"/>
+    <path fill="url(#sea)" d="M0 315c66-25 122-30 200-8 76 21 135 20 200-1v208H0V315Z"/>
+    <path stroke="#D3E5C5" stroke-linecap="round" stroke-opacity=".78" stroke-width="5" d="M36 356c34 7 62 8 95 2m99 38c38 8 68 8 102 1m-232 51c36 8 65 7 101-1m75 35c33 6 55 6 84 1"/>
+    <path d="m90 379 107-139 108 139H90Z" fill="#274A44"/>
+    <path d="m152 379 68-103 71 103h-139Z" fill="#466B50"/>
+    <path d="M197 239c-16-29-47-33-63-11 24 0 38 9 50 31m15-20c17-30 47-34 64-12-24 0-40 9-51 31" fill="#315B45"/>
+    <path d="M200 264v95" stroke="#E7C77A" stroke-linecap="round" stroke-width="5"/>
+    <path d="m198 340-34 28h73l-39-28Z" fill="#F5D79A"/>
+    <path d="M152 382h100" stroke="#F5D79A" stroke-linecap="round" stroke-width="4"/>
+    <text x="34" y="69" fill="#FFF3CF" font-family="Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="3">RUANG BACA · FIKSI</text>
+    <text x="34" y="126" fill="#FFF9E9" font-family="Georgia,serif" font-size="31" font-weight="700">Petualangan</text>
+    <text x="34" y="164" fill="#FFF9E9" font-family="Georgia,serif" font-size="31" font-weight="700">di Pulau</text>
+    <text x="34" y="535" fill="#FDE9BB" font-family="Arial,sans-serif" font-size="14" letter-spacing="2">KISAH DI UJUNG LAUT</text>
+    <path stroke="#FDE9BB" stroke-opacity=".6" d="M34 554h332"/>
+</svg>
