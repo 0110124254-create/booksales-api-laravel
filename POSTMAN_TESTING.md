@@ -7,13 +7,21 @@ http://127.0.0.1:8000/api
 ```
 
 Import [`postman/Booksales API.postman_collection.json`](./postman/Booksales%20API.postman_collection.json)
-in Postman and select **Run collection** to run the public API smoke tests.
-The **Admin book CRUD (set adminEmail and adminPassword first)** folder runs
-the complete create, read, update, and delete workflow. Before running that
-folder, set the collection's `adminEmail` and `adminPassword` variables to
-the credentials of a local administrator. The collection logs in, creates
-a uniquely named test book, reads and updates it, deletes it, and confirms
-the deleted book returns `404`.
+in Postman. Run the public API smoke tests directly. Before running either
+admin folder, set the collection variables `adminEmail` and `adminPassword`
+to a local administrator's credentials.
+
+- **Admin Genre dan Author create-read-delete** logs in, checks that
+  unauthenticated and invalid create requests are rejected, creates a
+  uniquely named Genre and Author, reads each one, deletes the test records,
+  verifies they return `404`, and logs out.
+- **Admin book CRUD** creates a uniquely named test book, reads and updates
+  it, deletes it, and confirms the deleted book returns `404`.
+
+The Genre and Author tests remove their temporary records when all requests
+complete successfully. If you stop the run before the DELETE requests, remove
+the uniquely named `Postman Genre ...` and `Postman Author ...` test records
+before rerunning.
 
 Send `Accept: application/json` with requests. JSON request bodies use
 `Content-Type: application/json`. Successful and failed API responses use a
