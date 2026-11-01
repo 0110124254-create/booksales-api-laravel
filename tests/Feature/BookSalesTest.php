@@ -147,6 +147,25 @@ class BookSalesTest extends TestCase
             ->assertJsonPath('success', true);
     }
 
+    public function test_admin_cannot_create_a_book_with_invalid_data_and_receives_validation_errors(): void
+    {
+        Sanctum::actingAs(User::factory()->create(['is_admin' => true]));
+
+        $this->postJson('/api/books', [
+            'title' => '',
+            'genre' => [],
+            'price' => -1,
+            'stock' => -1,
+        ])->assertUnprocessable()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Validation failed')
+            ->assertJsonPath('data', null)
+            ->assertJsonPath('errors.title.0', 'The title field is required.')
+            ->assertJsonValidationErrors(['title', 'genre', 'price', 'stock']);
+
+        $this->assertDatabaseCount('books', 0);
+    }
+
     public function test_admin_can_log_in_and_log_out_with_a_sanctum_token(): void
     {
         User::factory()->create([

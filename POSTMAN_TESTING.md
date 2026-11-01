@@ -8,6 +8,12 @@ http://127.0.0.1:8000/api
 
 Import [`postman/Booksales API.postman_collection.json`](./postman/Booksales%20API.postman_collection.json)
 in Postman and select **Run collection** to run the public API smoke tests.
+The **Admin book CRUD (set adminEmail and adminPassword first)** folder runs
+the complete create, read, update, and delete workflow. Before running that
+folder, set the collection's `adminEmail` and `adminPassword` variables to
+the credentials of a local administrator. The collection logs in, creates
+a uniquely named test book, reads and updates it, deletes it, and confirms
+the deleted book returns `404`.
 
 Send `Accept: application/json` with requests. JSON request bodies use
 `Content-Type: application/json`. Successful and failed API responses use a
