@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "6470de48-cdc8-4ed1-8c43-724bdb0f6c68",
     "name": "Booksales API",
-    "description": "Smoke tests for the public JSON API, authenticated admin Genre and Author create/read workflows, and admin book CRUD.",
+    "description": "Smoke tests for the public JSON API, authenticated admin Genre and Author CRUD, and admin book CRUD.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -39,11 +39,19 @@
       "value": ""
     },
     {
+      "key": "updatedGenreName",
+      "value": ""
+    },
+    {
       "key": "createdAuthorId",
       "value": ""
     },
     {
       "key": "createdAuthorName",
+      "value": ""
+    },
+    {
+      "key": "updatedAuthorName",
       "value": ""
     },
     {
@@ -377,7 +385,7 @@
       ]
     },
     {
-      "name": "Admin Genre dan Author create-read-delete (atur adminEmail dan adminPassword)",
+      "name": "Admin Genre dan Author CRUD (atur adminEmail dan adminPassword)",
       "item": [
         {
           "name": "POST admin login untuk Genre dan Author",
@@ -412,7 +420,9 @@
                 "exec": [
                   "var timestamp = Date.now();",
                   "pm.collectionVariables.set('createdGenreName', 'Postman Genre ' + timestamp);",
+                  "pm.collectionVariables.set('updatedGenreName', 'Postman Genre Updated ' + timestamp);",
                   "pm.collectionVariables.set('createdAuthorName', 'Postman Author ' + timestamp);",
+                  "pm.collectionVariables.set('updatedAuthorName', 'Postman Author Updated ' + timestamp);",
                   "pm.collectionVariables.unset('createdGenreId');",
                   "pm.collectionVariables.unset('createdAuthorId');"
                 ]
@@ -431,6 +441,108 @@
                   "if (pm.response.code === 200) {",
                   "    pm.collectionVariables.set('adminToken', pm.response.json().data.token);",
                   "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET missing genre returns 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/genres/{{missingId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Genre lookup returns the standard not-found response', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "    pm.expect(pm.response.json()).to.include({ success: false, message: 'Resource not found', data: null });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH missing genre returns 404",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Genre tidak ditemukan\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/genres/{{missingId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Updating a missing genre returns the standard 404 response', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "    pm.expect(pm.response.json()).to.include({ success: false, message: 'Resource not found', data: null });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE missing genre returns 404",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/genres/{{missingId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Deleting a missing genre returns the standard 404 response', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "    pm.expect(pm.response.json()).to.include({ success: false, message: 'Resource not found', data: null });",
+                  "});"
                 ]
               }
             }
@@ -560,6 +672,80 @@
           ]
         },
         {
+          "name": "PATCH update genre",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{updatedGenreName}}\",\n  \"description\": \"Genre yang diperbarui melalui Postman.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/genres/{{createdGenreId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Genre can be updated and returns the persisted values', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()).to.include({ success: true, message: 'Resource updated successfully' });",
+                  "    pm.expect(pm.response.json().data.name).to.eql(pm.collectionVariables.get('updatedGenreName'));",
+                  "    pm.expect(pm.response.json().data.description).to.eql('Genre yang diperbarui melalui Postman.');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET updated genre",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/genres/{{createdGenreId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Updated genre can be retrieved with the new values', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().data.name).to.eql(pm.collectionVariables.get('updatedGenreName'));",
+                  "    pm.expect(pm.response.json().data.description).to.eql('Genre yang diperbarui melalui Postman.');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "DELETE test genre",
           "request": {
             "method": "DELETE",
@@ -611,6 +797,108 @@
                   "pm.test('Deleted test genre can no longer be retrieved', function () {",
                   "    pm.response.to.have.status(404);",
                   "    pm.expect(pm.response.json()).to.include({ success: false, message: 'Resource not found' });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET missing author returns 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/authors/{{missingId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Author lookup returns the standard not-found response', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "    pm.expect(pm.response.json()).to.include({ success: false, message: 'Resource not found', data: null });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH missing author returns 404",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Author tidak ditemukan\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/authors/{{missingId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Updating a missing author returns the standard 404 response', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "    pm.expect(pm.response.json()).to.include({ success: false, message: 'Resource not found', data: null });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE missing author returns 404",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/authors/{{missingId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Deleting a missing author returns the standard 404 response', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "    pm.expect(pm.response.json()).to.include({ success: false, message: 'Resource not found', data: null });",
                   "});"
                 ]
               }
@@ -735,6 +1023,80 @@
                   "    pm.expect(pm.response.json().data.id).to.eql(Number(pm.collectionVariables.get('createdAuthorId')));",
                   "    pm.expect(pm.response.json().data.name).to.eql(pm.collectionVariables.get('createdAuthorName'));",
                   "    pm.expect(pm.response.json().data.books_count).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH update author",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{updatedAuthorName}}\",\n  \"description\": \"Penulis yang diperbarui melalui Postman.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/authors/{{createdAuthorId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Author can be updated and returns the persisted values', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()).to.include({ success: true, message: 'Resource updated successfully' });",
+                  "    pm.expect(pm.response.json().data.name).to.eql(pm.collectionVariables.get('updatedAuthorName'));",
+                  "    pm.expect(pm.response.json().data.description).to.eql('Penulis yang diperbarui melalui Postman.');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET updated author",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/authors/{{createdAuthorId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Updated author can be retrieved with the new values', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().data.name).to.eql(pm.collectionVariables.get('updatedAuthorName'));",
+                  "    pm.expect(pm.response.json().data.description).to.eql('Penulis yang diperbarui melalui Postman.');",
                   "});"
                 ]
               }

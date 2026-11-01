@@ -11,10 +11,11 @@ in Postman. Run the public API smoke tests directly. Before running either
 admin folder, set the collection variables `adminEmail` and `adminPassword`
 to a local administrator's credentials.
 
-- **Admin Genre dan Author create-read-delete** logs in, checks that
-  unauthenticated and invalid create requests are rejected, creates a
-  uniquely named Genre and Author, reads each one, deletes the test records,
-  verifies they return `404`, and logs out.
+- **Admin Genre dan Author CRUD** logs in, checks that unauthenticated and
+  invalid create requests are rejected, verifies that show/update/delete
+  requests for missing Genre and Author records return `404`, creates
+  uniquely named records, reads and updates each one, verifies the updated
+  values, deletes the test records, verifies they return `404`, and logs out.
 - **Admin book CRUD** creates a uniquely named test book, reads and updates
   it, deletes it, and confirms the deleted book returns `404`.
 

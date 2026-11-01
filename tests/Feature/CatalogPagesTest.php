@@ -283,4 +283,52 @@ class CatalogPagesTest extends TestCase
         $book->delete();
         $this->deleteJson("/api/authors/{$authorId}")->assertOk();
     }
+
+    public function test_returns_404_for_missing_genre_on_show_update_and_destroy(): void
+    {
+        Sanctum::actingAs(User::factory()->create(['is_admin' => true]));
+        $missingGenreId = 2147483647;
+
+        $this->getJson("/api/genres/{$missingGenreId}")
+            ->assertNotFound()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Resource not found')
+            ->assertJsonPath('data', null);
+
+        $this->patchJson("/api/genres/{$missingGenreId}", ['name' => 'Genre tidak ditemukan'])
+            ->assertNotFound()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Resource not found')
+            ->assertJsonPath('data', null);
+
+        $this->deleteJson("/api/genres/{$missingGenreId}")
+            ->assertNotFound()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Resource not found')
+            ->assertJsonPath('data', null);
+    }
+
+    public function test_returns_404_for_missing_author_on_show_update_and_destroy(): void
+    {
+        Sanctum::actingAs(User::factory()->create(['is_admin' => true]));
+        $missingAuthorId = 2147483647;
+
+        $this->getJson("/api/authors/{$missingAuthorId}")
+            ->assertNotFound()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Resource not found')
+            ->assertJsonPath('data', null);
+
+        $this->patchJson("/api/authors/{$missingAuthorId}", ['name' => 'Author tidak ditemukan'])
+            ->assertNotFound()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Resource not found')
+            ->assertJsonPath('data', null);
+
+        $this->deleteJson("/api/authors/{$missingAuthorId}")
+            ->assertNotFound()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Resource not found')
+            ->assertJsonPath('data', null);
+    }
 }
