@@ -6,15 +6,15 @@
 @section('title', 'Login Admin')
 
 @section('content')
-    <section class="mx-auto grid min-h-[calc(100vh-180px)] max-w-7xl items-center gap-10 px-5 py-14 sm:px-8 lg:grid-cols-2 lg:gap-20">
+    <section class="mx-auto grid min-h-[calc(100vh-180px)] max-w-7xl items-center gap-10 px-5 py-12 sm:px-8 sm:py-16 lg:grid-cols-2 lg:gap-20">
         <div class="max-w-xl">
-            <p class="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-emerald-900">Area administrator</p>
+            <p class="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-emerald-900">Ruang Baca · Admin</p>
             <h1 class="mt-6 text-4xl font-black leading-tight tracking-tight text-stone-950 sm:text-5xl">Selamat datang kembali.</h1>
-            <p class="mt-5 text-lg leading-8 text-stone-600">Masuk dengan akun admin untuk melihat ringkasan katalog buku, genre, penulis, dan pesanan.</p>
+            <p class="mt-5 text-base leading-7 text-stone-600 sm:text-lg sm:leading-8">Masuk dengan akun admin untuk mengelola katalog, memantau koleksi, dan melihat ringkasan toko.</p>
             <a href="{{ route('home') }}" class="mt-7 inline-flex items-center gap-2 text-sm font-bold text-emerald-900 hover:text-emerald-700"><span aria-hidden="true">←</span> Kembali ke katalog</a>
         </div>
 
-        <div class="mx-auto w-full max-w-lg rounded-[2rem] border border-stone-200 bg-white p-7 shadow-xl shadow-stone-900/5 sm:p-10">
+        <div class="mx-auto w-full max-w-lg rounded-[2rem] border border-stone-200/80 bg-white p-7 shadow-2xl shadow-stone-900/[0.07] sm:p-10">
             <div>
                 <p class="text-sm font-bold text-emerald-800">Ruang Baca</p>
                 <h2 class="mt-2 text-2xl font-black text-stone-950">Login admin</h2>
@@ -46,7 +46,7 @@
                     Ingat saya
                 </label>
 
-                <button type="submit" class="w-full rounded-full bg-emerald-950 px-6 py-3.5 text-sm font-bold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-700/20">Masuk ke dashboard</button>
+                <button type="submit" class="w-full rounded-full bg-emerald-950 px-6 py-3.5 text-sm font-bold text-white shadow-md shadow-emerald-950/10 transition hover:-translate-y-0.5 hover:bg-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-700/20">Masuk ke dashboard</button>
             </form>
         </div>
     </section>

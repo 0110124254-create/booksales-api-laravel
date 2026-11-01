@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminBookController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AuthorController;
@@ -23,6 +24,11 @@ Route::post('/logout', [AuthController::class, 'webDestroy'])
     ->middleware('auth')
     ->name('logout');
 
-Route::get('/admin', [AdminDashboardController::class, 'index'])
-    ->middleware(['auth', 'can:access-admin'])
-    ->name('admin.dashboard');
+Route::middleware(['auth', 'can:access-admin'])
+    ->prefix('admin')
+    ->group(function () {
+        Route::get('/', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
+        Route::resource('books', AdminBookController::class)
+            ->except('show')
+            ->names('admin.web-books');
+    });

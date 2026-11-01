@@ -6,14 +6,17 @@
 @section('title', 'Dashboard Admin')
 
 @section('content')
-    <section class="mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-20">
+    <section class="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16">
         <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
             <div>
                 <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-800">Area administrator</p>
                 <h1 class="mt-3 text-4xl font-black tracking-tight text-stone-950 sm:text-5xl">Dashboard admin</h1>
                 <p class="mt-4 text-lg text-stone-600">Login sebagai <strong class="text-stone-950">{{ auth()->user()->name }}</strong> · {{ auth()->user()->email }}</p>
             </div>
-            <a href="{{ route('home') }}" class="w-fit rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-bold text-stone-800 hover:border-emerald-700 hover:text-emerald-900">Lihat katalog <span aria-hidden="true">→</span></a>
+            <div class="flex flex-wrap gap-3">
+                <a href="{{ route('admin.web-books.index') }}" class="w-fit rounded-full bg-emerald-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-800">Kelola buku</a>
+                <a href="{{ route('home') }}" class="w-fit rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-bold text-stone-800 hover:border-emerald-700 hover:text-emerald-900">Lihat katalog <span aria-hidden="true">→</span></a>
+            </div>
         </div>
 
         <div class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
