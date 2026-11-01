@@ -21,4 +21,23 @@ class Author extends Model
     {
         return $this->hasMany(Book::class, 'author_id');
     }
+
+    /**
+     * @return list<array{id: int, name: string, nationality: ?string, description: ?string, books_count: int}>
+     */
+    public static function catalogData(): array
+    {
+        return static::query()
+            ->withCount('books')
+            ->orderBy('id')
+            ->get()
+            ->map(static fn (self $author): array => [
+                'id' => (int) $author->getKey(),
+                'name' => $author->name,
+                'nationality' => $author->nationality,
+                'description' => $author->description,
+                'books_count' => (int) $author->books_count,
+            ])
+            ->all();
+    }
 }

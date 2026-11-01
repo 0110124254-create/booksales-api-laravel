@@ -9,9 +9,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 class AuthorController extends Controller
 {
+    public function webIndex(): View
+    {
+        return view('authors.index', [
+            'authors' => Author::catalogData(),
+        ]);
+    }
+
     public function index(): JsonResponse
     {
         return response()->json([

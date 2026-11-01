@@ -10,6 +10,8 @@ Repository GitHub berisi kode aplikasi, bukan database lokal atau akun admin. Un
 git clone https://github.com/0110124254-create/booksales-api-laravel.git
 cd booksales-api-laravel
 composer install
+npm.cmd install
+npm.cmd run build
 Copy-Item .env.example .env
 New-Item -ItemType File -Path database\database.sqlite -Force
 php artisan key:generate
@@ -18,7 +20,7 @@ php artisan app:create-admin
 php artisan serve
 ```
 
-Saat `app:create-admin` meminta nama dan email, isi sesuai keinginan. Buat kata sandi minimal 12 karakter dan ketik ulang sama persis pada konfirmasi. Input kata sandi **tidak menampilkan karakter atau tanda bintang** di terminal; itu normal. Setelah server berjalan, buka alamat yang ditampilkan Artisan (biasanya `http://127.0.0.1:8000`), lalu pilih **Admin** untuk login.
+Saat `app:create-admin` meminta nama dan email, isi sesuai keinginan. Buat kata sandi minimal 12 karakter dan ketik ulang sama persis pada konfirmasi. Input kata sandi **tidak menampilkan karakter atau tanda bintang** di terminal; itu normal. Setelah server berjalan, buka alamat yang ditampilkan Artisan (biasanya `http://127.0.0.1:8000`), lalu pilih **Login Admin** dan masuk menggunakan akun yang baru dibuat. Dashboard admin tersedia di `/admin`.
 
 Jika repository sudah diunduh, dosen dapat menjalankan perintah mulai dari `composer install` di folder proyek. Jangan jalankan `Copy-Item .env.example .env` jika file `.env` lokal sudah ada, agar konfigurasi tidak tertimpa.
 
@@ -28,9 +30,9 @@ Untuk pemeriksaan otomatis, jalankan `php artisan test`. Akun dan kata sandi adm
 
 SQLite is the default database. Run `php artisan migrate --seed` to create the tables and seed five authors and five books linked by a foreign key. Then create an administrator with `php artisan app:create-admin`. Public registration is disabled.
 
-Customers can order available books from the home page and select cash or bank transfer. Orders reserve stock until the admin confirms payment or cancels the order. The payment gateway is not connected; transfer instructions must be provided by the store operator.
+The web pages display the book, genre, and author catalogs. Checkout remains available through `POST /api/checkout` with cash or bank-transfer payment options. Orders reserve stock until the admin confirms payment or cancels the order. The payment gateway is not connected; transfer instructions must be provided by the store operator.
 
-The book catalog is available at `/books` (also shown on the home page), and the author catalog is available at `/authors`.
+The book catalog is available at `/books` (also shown on the home page), the genre catalog at `/genres`, and the author catalog at `/authors`. Admin browser login is available at `/login`.
 
 Run the test suite with `php artisan test`.
 

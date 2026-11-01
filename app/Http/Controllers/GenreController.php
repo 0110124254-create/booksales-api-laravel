@@ -9,9 +9,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 class GenreController extends Controller
 {
+    public function webIndex(): View
+    {
+        return view('genres.index', [
+            'genres' => Genre::catalogData(),
+        ]);
+    }
+
     public function index(): JsonResponse
     {
         return response()->json([
