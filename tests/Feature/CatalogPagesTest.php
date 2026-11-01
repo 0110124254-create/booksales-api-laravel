@@ -331,4 +331,69 @@ class CatalogPagesTest extends TestCase
             ->assertJsonPath('message', 'Resource not found')
             ->assertJsonPath('data', null);
     }
+
+    public function test_guests_can_read_genres_and_authors(): void
+    {
+        $genre = Genre::query()->create([
+            'name' => 'Genre publik',
+            'description' => 'Dapat dibaca tanpa login.',
+        ]);
+        $author = Author::factory()->create(['name' => 'Author publik']);
+
+        $this->getJson('/api/genres')
+            ->assertOk()
+            ->assertJsonFragment(['id' => $genre->id, 'name' => 'Genre publik']);
+        $this->getJson("/api/genres/{$genre->id}")
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Genre publik');
+        $this->getJson('/api/authors')
+            ->assertOk()
+            ->assertJsonFragment(['id' => $author->id, 'name' => 'Author publik']);
+        $this->getJson("/api/authors/{$author->id}")
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Author publik');
+    }
+
+    public function test_returns_401_when_guests_attempt_genre_and_author_writes(): void
+    {
+        $genre = Genre::query()->create([
+            'name' => 'Genre terlindungi',
+            'description' => 'Hanya admin yang dapat mengubah.',
+        ]);
+        $author = Author::factory()->create(['name' => 'Author terlindungi']);
+
+        $this->postJson('/api/genres', ['name' => 'Genre tamu'])->assertUnauthorized();
+        $this->patchJson("/api/genres/{$genre->id}", ['name' => 'Genre berubah'])->assertUnauthorized();
+        $this->deleteJson("/api/genres/{$genre->id}")->assertUnauthorized();
+        $this->postJson('/api/authors', ['name' => 'Author tamu'])->assertUnauthorized();
+        $this->patchJson("/api/authors/{$author->id}", ['name' => 'Author berubah'])->assertUnauthorized();
+        $this->deleteJson("/api/authors/{$author->id}")->assertUnauthorized();
+
+        $this->assertModelExists($genre);
+        $this->assertModelExists($author);
+        $this->assertDatabaseMissing('genres', ['name' => 'Genre tamu']);
+        $this->assertDatabaseMissing('authors', ['name' => 'Author tamu']);
+    }
+
+    public function test_returns_403_when_non_admin_users_attempt_genre_and_author_writes(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+        $genre = Genre::query()->create([
+            'name' => 'Genre khusus admin',
+            'description' => 'Hanya admin yang dapat mengubah.',
+        ]);
+        $author = Author::factory()->create(['name' => 'Author khusus admin']);
+
+        $this->postJson('/api/genres', ['name' => 'Genre non-admin'])->assertForbidden();
+        $this->patchJson("/api/genres/{$genre->id}", ['name' => 'Genre berubah'])->assertForbidden();
+        $this->deleteJson("/api/genres/{$genre->id}")->assertForbidden();
+        $this->postJson('/api/authors', ['name' => 'Author non-admin'])->assertForbidden();
+        $this->patchJson("/api/authors/{$author->id}", ['name' => 'Author berubah'])->assertForbidden();
+        $this->deleteJson("/api/authors/{$author->id}")->assertForbidden();
+
+        $this->assertModelExists($genre);
+        $this->assertModelExists($author);
+        $this->assertDatabaseMissing('genres', ['name' => 'Genre non-admin']);
+        $this->assertDatabaseMissing('authors', ['name' => 'Author non-admin']);
+    }
 }

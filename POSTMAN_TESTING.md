@@ -7,9 +7,11 @@ http://127.0.0.1:8000/api
 ```
 
 Import [`postman/Booksales API.postman_collection.json`](./postman/Booksales%20API.postman_collection.json)
-in Postman. Run the public API smoke tests directly. Before running either
-admin folder, set the collection variables `adminEmail` and `adminPassword`
-to a local administrator's credentials.
+in Postman. Run the public API smoke tests directly. They verify that guests
+can list and view Genre and Author records, and that guest create, update,
+and delete requests are rejected. Before running either admin folder, set
+the collection variables `adminEmail` and `adminPassword` to a local
+administrator's credentials.
 
 - **Admin Genre dan Author CRUD** logs in, checks that unauthenticated and
   invalid create requests are rejected, verifies that show/update/delete
@@ -28,6 +30,16 @@ Send `Accept: application/json` with requests. JSON request bodies use
 `Content-Type: application/json`. Successful and failed API responses use a
 `success`, `message`, and `data` envelope; validation errors also include
 `errors`.
+
+## Genre and Author access
+
+| Access | Methods | Routes |
+|---|---|---|
+| Public, no login required | GET list and detail | `/api/genres`, `/api/genres/{id}`, `/api/authors`, `/api/authors/{id}` |
+| Admin only | POST, PUT/PATCH, DELETE | `/api/genres`, `/api/genres/{id}`, `/api/authors`, `/api/authors/{id}` |
+
+Unauthenticated write requests return `401 Unauthorized`. Authenticated
+non-admin write requests return `403 Forbidden`.
 
 ## Public resources
 
