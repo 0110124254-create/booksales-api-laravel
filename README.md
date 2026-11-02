@@ -30,7 +30,7 @@ Untuk pemeriksaan otomatis, jalankan `php artisan test`. Akun dan kata sandi adm
 
 SQLite is the default database. Run `php artisan migrate --seed` to create the tables and seed five authors and five books linked by a foreign key. Then create an administrator with `php artisan app:create-admin`. Public registration is disabled.
 
-The web pages display the book, genre, and author catalogs. Checkout remains available through `POST /api/checkout` with cash or bank-transfer payment options. Orders reserve stock until the admin confirms payment or cancels the order. The payment gateway is not connected; transfer instructions must be provided by the store operator.
+The web pages display the book, genre, and author catalogs. Transaction endpoints use Sanctum tokens: authenticated customers can create, view their own, and update pending transactions through `/api/sales` (with `/api/checkout` retained as a create alias); only admins can list and delete transactions. New transactions are linked to their customer account. Orders reserve stock until the admin confirms payment or cancels the order. The payment gateway is not connected; transfer instructions must be provided by the store operator.
 
 The book catalog is available at `/books` (also shown on the home page), the genre catalog at `/genres`, and the author catalog at `/authors`. Admin browser login is available at `/login`.
 

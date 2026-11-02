@@ -79,7 +79,7 @@ class AuthController extends Controller
 
         $credentials = $validator->validated();
         $email = strtolower(trim($credentials['email']));
-        $user = User::query()->where('email', $email)->where('is_admin', true)->first();
+        $user = User::query()->where('email', $email)->first();
 
         if ($user === null || ! Hash::check($credentials['password'], $user->password)) {
             return response()->json([

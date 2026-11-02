@@ -45,6 +45,7 @@ class BookSalesTest extends TestCase
 
     public function test_checkout_records_order_and_decreases_stock(): void
     {
+        Sanctum::actingAs(User::factory()->create());
         $book = Book::factory()->create([
             'price' => 30000,
             'stock' => 5,
@@ -80,6 +81,7 @@ class BookSalesTest extends TestCase
 
     public function test_checkout_rejects_insufficient_stock_without_partial_changes(): void
     {
+        Sanctum::actingAs(User::factory()->create());
         $firstBook = Book::factory()->create(['stock' => 5, 'price' => 20000]);
         $secondBook = Book::factory()->create(['stock' => 1]);
 
@@ -194,6 +196,8 @@ class BookSalesTest extends TestCase
     public function test_admin_can_confirm_payment_and_cancel_pending_orders_safely(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);
+        $customer = User::factory()->create();
+        Sanctum::actingAs($customer);
         $book = Book::factory()->create(['stock' => 5, 'price' => 25000]);
 
         $paidResponse = $this->postJson('/api/checkout', [
@@ -211,6 +215,7 @@ class BookSalesTest extends TestCase
 
         $this->assertSame(3, $book->fresh()->stock);
 
+        Sanctum::actingAs($customer);
         $cancelResponse = $this->postJson('/api/checkout', [
             'customer_name' => 'Pelanggan Kedua',
             'customer_phone' => '08123456789',
@@ -219,6 +224,7 @@ class BookSalesTest extends TestCase
         ])->assertCreated();
         $pendingSale = Sale::query()->where('reference', $cancelResponse->json('data.reference'))->firstOrFail();
 
+        Sanctum::actingAs($admin);
         $this->postJson(route('admin.sales.cancel', $pendingSale))
             ->assertOk()
             ->assertJsonPath('data.payment_status', 'cancelled');
@@ -235,6 +241,7 @@ class BookSalesTest extends TestCase
 
     public function test_customer_cannot_create_orders_for_inactive_books(): void
     {
+        Sanctum::actingAs(User::factory()->create());
         $book = Book::factory()->create(['is_active' => false, 'stock' => 5]);
 
         $this->postJson('/api/checkout', [
@@ -261,7 +268,7 @@ class BookSalesTest extends TestCase
             ->assertJsonPath('data.start_date', today()->startOfMonth()->toDateString());
     }
 
-    public function test_non_admin_accounts_cannot_sign_in_or_access_admin_routes(): void
+    public function test_customers_can_sign_in_but_cannot_access_admin_routes(): void
     {
         $user = User::factory()->create([
             'email' => 'customer@example.test',
@@ -271,9 +278,127 @@ class BookSalesTest extends TestCase
         $this->postJson('/api/login', [
             'email' => 'customer@example.test',
             'password' => 'a-strong-password',
-        ])->assertUnauthorized();
+        ])->assertOk()
+            ->assertJsonPath('data.user.id', $user->id);
 
         Sanctum::actingAs($user);
         $this->getJson(route('admin.books.index'))->assertForbidden();
+    }
+
+    public function test_guest_cannot_create_update_or_show_sales(): void
+    {
+        $sale = Sale::factory()->create();
+
+        $payload = [
+            'customer_name' => 'Pelanggan',
+            'customer_phone' => '08123456789',
+            'payment_method' => 'cash',
+            'items' => [['book_id' => Book::factory()->create()->id, 'quantity' => 1]],
+        ];
+
+        $this->postJson('/api/sales', $payload)->assertUnauthorized();
+        $this->postJson('/api/checkout', $payload)->assertUnauthorized();
+        $this->getJson("/api/sales/{$sale->reference}")->assertUnauthorized();
+        $this->patchJson("/api/sales/{$sale->reference}", ['customer_name' => 'Baru'])->assertUnauthorized();
+        $this->getJson("/api/orders/{$sale->reference}")->assertUnauthorized();
+    }
+
+    public function test_customer_cannot_list_or_delete_sales_and_admin_cannot_use_customer_crud(): void
+    {
+        $sale = Sale::factory()->create();
+
+        $this->getJson('/api/admin/sales')->assertUnauthorized();
+        $this->deleteJson("/api/admin/sales/{$sale->id}")->assertUnauthorized();
+
+        Sanctum::actingAs(User::factory()->create());
+        $this->getJson('/api/admin/sales')->assertForbidden();
+        $this->deleteJson("/api/admin/sales/{$sale->id}")->assertForbidden();
+
+        Sanctum::actingAs(User::factory()->create(['is_admin' => true]));
+        $this->postJson('/api/sales', [])->assertForbidden();
+        $this->getJson("/api/sales/{$sale->reference}")->assertForbidden();
+        $this->patchJson("/api/sales/{$sale->reference}", [])->assertForbidden();
+    }
+
+    public function test_customer_can_update_owned_pending_sale_and_cannot_access_another_customers_sale(): void
+    {
+        $customer = User::factory()->create();
+        $otherCustomer = User::factory()->create();
+        $book = Book::factory()->create(['price' => 30000, 'stock' => 5]);
+        Sanctum::actingAs($customer);
+
+        $created = $this->postJson('/api/sales', [
+            'customer_name' => 'Pelanggan Contoh',
+            'customer_phone' => '08123456789',
+            'payment_method' => 'cash',
+            'items' => [['book_id' => $book->id, 'quantity' => 2]],
+        ])->assertCreated()
+            ->assertJsonPath('data.user_id', $customer->id);
+
+        $reference = $created->json('data.reference');
+        $sale = Sale::query()->where('reference', $reference)->firstOrFail();
+
+        $this->patchJson("/api/sales/{$reference}", [
+            'customer_name' => 'Nama Diperbarui',
+            'items' => [['book_id' => $book->id, 'quantity' => 3]],
+        ])->assertOk()
+            ->assertJsonPath('data.customer_name', 'Nama Diperbarui')
+            ->assertJsonPath('data.total', 90000)
+            ->assertJsonPath('data.items.0.quantity', 3);
+
+        $this->assertSame(2, $book->fresh()->stock);
+        $this->assertDatabaseHas('sales', [
+            'id' => $sale->id,
+            'user_id' => $customer->id,
+            'total' => 90000,
+        ]);
+
+        $this->patchJson("/api/sales/{$reference}", [
+            'items' => [['book_id' => $book->id, 'quantity' => 10]],
+        ])->assertUnprocessable();
+        $this->assertSame(2, $book->fresh()->stock);
+        $this->assertDatabaseHas('sale_items', [
+            'sale_id' => $sale->id,
+            'quantity' => 3,
+        ]);
+
+        Sanctum::actingAs($otherCustomer);
+        $this->getJson("/api/sales/{$reference}")->assertNotFound();
+        $this->patchJson("/api/sales/{$reference}", ['customer_name' => 'Tidak boleh'])->assertNotFound();
+
+        Sanctum::actingAs(User::factory()->create(['is_admin' => true]));
+        $this->postJson(route('admin.sales.paid', $sale))->assertOk();
+
+        Sanctum::actingAs($customer);
+        $this->patchJson("/api/sales/{$reference}", ['customer_name' => 'Sudah dibayar'])
+            ->assertStatus(409);
+    }
+
+    public function test_admin_can_list_and_delete_sales_and_pending_delete_restores_stock(): void
+    {
+        $customer = User::factory()->create();
+        $book = Book::factory()->create(['stock' => 5]);
+        Sanctum::actingAs($customer);
+
+        $response = $this->postJson('/api/sales', [
+            'customer_name' => 'Pelanggan Contoh',
+            'customer_phone' => '08123456789',
+            'payment_method' => 'cash',
+            'items' => [['book_id' => $book->id, 'quantity' => 2]],
+        ])->assertCreated();
+        $sale = Sale::query()->where('reference', $response->json('data.reference'))->firstOrFail();
+
+        $this->getJson('/api/admin/sales')->assertForbidden();
+        $this->deleteJson("/api/admin/sales/{$sale->id}")->assertForbidden();
+
+        Sanctum::actingAs(User::factory()->create(['is_admin' => true]));
+        $this->getJson('/api/admin/sales')->assertOk()
+            ->assertJsonFragment(['reference' => $sale->reference]);
+        $this->deleteJson("/api/admin/sales/{$sale->id}")->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseMissing('sales', ['id' => $sale->id]);
+        $this->assertSame(5, $book->fresh()->stock);
+        $this->assertDatabaseMissing('sale_items', ['sale_id' => $sale->id]);
     }
 }

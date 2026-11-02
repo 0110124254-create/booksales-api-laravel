@@ -34,14 +34,26 @@ Route::get('/login', [AuthController::class, 'create'])->name('api.login');
 Route::post('/login', [AuthController::class, 'store'])->middleware('throttle:5,1')->name('api.login.store');
 Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth:sanctum')->name('api.logout');
 
-Route::post('/checkout', [SaleController::class, 'store'])
-    ->middleware('throttle:10,1')
-    ->name('sales.store');
-Route::get('/orders/{sale:reference}', [SaleController::class, 'show'])->name('sales.show');
+Route::middleware(['auth:sanctum', 'can:access-customer'])->group(function () {
+    Route::post('/sales', [SaleController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('sales.store');
+    Route::post('/checkout', [SaleController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('sales.checkout');
+    Route::get('/sales/{reference}', [SaleController::class, 'show'])->name('sales.resource.show');
+    Route::match(['put', 'patch'], '/sales/{reference}', [SaleController::class, 'update'])
+        ->name('sales.update');
+
+    Route::get('/orders/{reference}', [SaleController::class, 'show'])->name('sales.show');
+    Route::match(['put', 'patch'], '/orders/{reference}', [SaleController::class, 'update'])
+        ->name('sales.order.update');
+});
 
 Route::middleware(['auth:sanctum', 'can:access-admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::apiResource('books', BookController::class)->except('show');
     Route::get('/sales', [SaleController::class, 'index'])->name('sales.index');
+    Route::delete('/sales/{id}', [SaleController::class, 'destroy'])->name('sales.destroy');
     Route::post('/sales/{sale}/paid', [SaleController::class, 'markPaid'])->name('sales.paid');
     Route::post('/sales/{sale}/cancel', [SaleController::class, 'cancel'])->name('sales.cancel');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');

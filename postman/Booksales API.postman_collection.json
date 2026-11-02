@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "6470de48-cdc8-4ed1-8c43-724bdb0f6c68",
     "name": "Booksales API",
-    "description": "Tests public Genre and Author reads, admin-only Genre and Author writes, the public JSON API, and admin book CRUD.",
+    "description": "Tests public catalog reads, authenticated customer transaction operations, admin-only transaction listing and deletion, admin catalog writes, and admin book CRUD.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -256,7 +256,7 @@
       ]
     },
     {
-      "name": "POST invalid checkout returns 422",
+      "name": "POST checkout rejects guests",
       "request": {
         "method": "POST",
         "header": [
@@ -286,11 +286,8 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('Invalid checkout is rejected with validation errors', function () {",
-              "    pm.response.to.have.status(422);",
-              "    pm.expect(pm.response.json().success).to.eql(false);",
-              "    pm.expect(pm.response.json().message).to.eql('Validation failed');",
-              "    pm.expect(pm.response.json().errors).to.be.an('object');",
+              "pm.test('Checkout requires an authenticated customer', function () {",
+              "    pm.response.to.have.status(401);",
               "});"
             ]
           }

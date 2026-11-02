@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Book;
 use App\Models\Sale;
+use App\Models\SaleItem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -40,9 +41,10 @@ class SaleController extends Controller
         }
 
         try {
-            $sale = DB::transaction(function () use ($data, $requestedItems): Sale {
+            $sale = DB::transaction(function () use ($request, $data, $requestedItems): Sale {
                 $sale = Sale::create([
                     'reference' => 'BOOK-'.Str::upper(Str::random(12)),
+                    'user_id' => $request->user()->id,
                     'customer_name' => $data['customer_name'],
                     'customer_email' => $data['customer_email'] ?? null,
                     'customer_phone' => $data['customer_phone'],
@@ -101,9 +103,12 @@ class SaleController extends Controller
         ], 201);
     }
 
-    public function show(string $reference): JsonResponse
+    public function show(Request $request, string $reference): JsonResponse
     {
-        $sale = Sale::with('items')->where('reference', $reference)->first();
+        $sale = Sale::with('items')
+            ->whereBelongsTo($request->user())
+            ->where('reference', $reference)
+            ->first();
 
         if ($sale === null) {
             return $this->notFound();
@@ -116,12 +121,119 @@ class SaleController extends Controller
         ]);
     }
 
+    public function update(Request $request, string $reference): JsonResponse
+    {
+        $sale = Sale::query()
+            ->whereBelongsTo($request->user())
+            ->where('reference', $reference)
+            ->first();
+
+        if ($sale === null) {
+            return $this->notFound();
+        }
+
+        $validator = Validator::make($request->all(), [
+            'customer_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'customer_email' => ['sometimes', 'nullable', 'email', 'max:255'],
+            'customer_phone' => ['sometimes', 'required', 'string', 'max:30'],
+            'payment_method' => ['sometimes', 'required', 'in:cash,bank_transfer'],
+            'items' => ['sometimes', 'array', 'min:1'],
+            'items.*.book_id' => ['required_with:items', 'integer', 'distinct', 'exists:books,id'],
+            'items.*.quantity' => ['required_with:items', 'integer', 'min:0', 'max:1000'],
+        ]);
+
+        if ($validator->fails()) {
+            return $this->validationError($validator->errors()->toArray());
+        }
+
+        $data = $validator->validated();
+        if ($data === []) {
+            return $this->validationError([
+                'data' => ['Setidaknya satu data transaksi harus diperbarui.'],
+            ]);
+        }
+
+        $items = $data['items'] ?? null;
+        unset($data['items']);
+
+        try {
+            $sale = DB::transaction(function () use ($request, $sale, $data, $items): Sale {
+                $sale = Sale::query()
+                    ->whereBelongsTo($request->user())
+                    ->whereKey($sale->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                if ($sale->payment_status !== 'pending') {
+                    throw ValidationException::withMessages([
+                        'sale' => ['Hanya transaksi pending yang dapat diperbarui.'],
+                    ]);
+                }
+
+                if ($items !== null) {
+                    $data['total'] = $this->replaceItems($sale, $items);
+                }
+
+                $sale->update($data);
+
+                return $sale->load('items');
+            });
+        } catch (ValidationException $exception) {
+            if (isset($exception->errors()['sale'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Transaction cannot be updated',
+                    'data' => null,
+                    'errors' => $exception->errors(),
+                ], 409);
+            }
+
+            return $this->validationError($exception->errors());
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Resource updated successfully',
+            'data' => $sale,
+        ]);
+    }
+
     public function index(): JsonResponse
     {
         return response()->json([
             'success' => true,
             'message' => 'Get All Resource',
             'data' => Sale::with('items')->latest()->get(),
+        ]);
+    }
+
+    public function destroy(int $id): JsonResponse
+    {
+        $sale = Sale::with('items')->find($id);
+
+        if ($sale === null) {
+            return $this->notFound();
+        }
+
+        DB::transaction(function () use ($sale): void {
+            $sale = Sale::with('items')
+                ->whereKey($sale->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($sale->payment_status === 'pending') {
+                $sale->items->each(function (SaleItem $item): void {
+                    Book::query()->whereKey($item->book_id)->increment('stock', $item->quantity);
+                });
+            }
+
+            $sale->delete();
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Resource deleted successfully',
+            'data' => null,
         ]);
     }
 
@@ -211,6 +323,68 @@ class SaleController extends Controller
             'data' => null,
             'errors' => $errors,
         ], 422);
+    }
+
+    /**
+     * @param  array<int, array{book_id: int, quantity: int}>  $requestedItems
+     */
+    private function replaceItems(Sale $sale, array $requestedItems): int
+    {
+        $existingItems = $sale->items()->get();
+        $bookIds = $existingItems->pluck('book_id')
+            ->merge(collect($requestedItems)->pluck('book_id'))
+            ->unique()
+            ->sort()
+            ->values();
+        $books = Book::query()
+            ->whereIn('id', $bookIds)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('id');
+
+        foreach ($existingItems as $existingItem) {
+            $books->get($existingItem->book_id)?->increment('stock', $existingItem->quantity);
+        }
+
+        $sale->items()->delete();
+        $total = 0;
+        $activeItems = collect($requestedItems)
+            ->filter(fn (array $item): bool => $item['quantity'] > 0);
+
+        if ($activeItems->isEmpty()) {
+            throw ValidationException::withMessages([
+                'items' => ['Pilih setidaknya satu buku dengan jumlah lebih dari nol.'],
+            ]);
+        }
+
+        foreach ($activeItems as $item) {
+            $book = $books->get($item['book_id']);
+
+            if ($book === null || ! $book->is_active) {
+                throw ValidationException::withMessages([
+                    'items' => ['Salah satu buku tidak lagi tersedia.'],
+                ]);
+            }
+
+            $quantity = (int) $item['quantity'];
+            if ($book->stock < $quantity) {
+                throw ValidationException::withMessages([
+                    'items' => ["Stok untuk {$book->title} tidak mencukupi."],
+                ]);
+            }
+
+            $book->decrement('stock', $quantity);
+            $sale->items()->create([
+                'book_id' => $book->id,
+                'book_title' => $book->title,
+                'quantity' => $quantity,
+                'unit_price' => $book->price,
+            ]);
+            $total += $book->price * $quantity;
+        }
+
+        return $total;
     }
 
     private function notFound(): JsonResponse

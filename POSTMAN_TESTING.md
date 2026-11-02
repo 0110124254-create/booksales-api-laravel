@@ -8,10 +8,9 @@ http://127.0.0.1:8000/api
 
 Import [`postman/Booksales API.postman_collection.json`](./postman/Booksales%20API.postman_collection.json)
 in Postman. Run the public API smoke tests directly. They verify that guests
-can list and view Genre and Author records, and that guest create, update,
-and delete requests are rejected. Before running either admin folder, set
-the collection variables `adminEmail` and `adminPassword` to a local
-administrator's credentials.
+can list and view Genre and Author records, and that protected requests reject
+guests. Before running either admin folder, set the collection variables
+`adminEmail` and `adminPassword` to a local administrator's credentials.
 
 - **Admin Genre dan Author CRUD** logs in, checks that unauthenticated and
   invalid create requests are rejected, verifies that show/update/delete
@@ -30,6 +29,25 @@ Send `Accept: application/json` with requests. JSON request bodies use
 `Content-Type: application/json`. Successful and failed API responses use a
 `success`, `message`, and `data` envelope; validation errors also include
 `errors`.
+
+## Transaction access
+
+Customers must log in through `POST /api/login` and use the returned
+`data.token` as a Bearer token. API login accepts existing customer and admin
+accounts. Customer accounts must be provisioned locally; public registration
+is disabled.
+
+| Access | Methods | Routes |
+|---|---|---|
+| Authenticated customer only | Create | `POST /api/sales` or `POST /api/checkout` |
+| Authenticated owning customer only | Read one, update | `GET /api/sales/{reference}`, `PUT/PATCH /api/sales/{reference}` |
+| Admin only | Read all, delete | `GET /api/admin/sales`, `DELETE /api/admin/sales/{id}` |
+| Admin only | Confirm or cancel payment | `POST /api/admin/sales/{id}/paid`, `POST /api/admin/sales/{id}/cancel` |
+
+Guests receive `401 Unauthorized`; authenticated users with the wrong role
+receive `403 Forbidden`. A customer requesting another customer's transaction
+receives `404 Not Found`. Only pending transactions can be updated. Deleting a
+pending transaction as an admin restores its reserved book stock.
 
 ## Genre and Author access
 
@@ -52,8 +70,6 @@ non-admin write requests return `403 Forbidden`.
 | GET | `http://127.0.0.1:8000/api/genres/{id}` | Get a genre |
 | GET | `http://127.0.0.1:8000/api/authors` | List authors |
 | GET | `http://127.0.0.1:8000/api/authors/{id}` | Get an author |
-| POST | `http://127.0.0.1:8000/api/checkout` | Create an order |
-| GET | `http://127.0.0.1:8000/api/orders/{reference}` | Get an order by reference |
 
 ## Admin authentication and resources
 
@@ -63,7 +79,7 @@ Create an admin token with `POST /api/login`, then configure Postman's
 | Method | URL | Description |
 |---|---|---|
 | GET | `http://127.0.0.1:8000/api/login` | Login endpoint information |
-| POST | `http://127.0.0.1:8000/api/login` | Create an admin Sanctum token |
+| POST | `http://127.0.0.1:8000/api/login` | Create a customer or admin Sanctum token |
 | POST | `http://127.0.0.1:8000/api/logout` | Revoke the current token |
 | GET | `http://127.0.0.1:8000/api/user` | Get the authenticated user |
 | POST | `http://127.0.0.1:8000/api/books` | Create a book |
@@ -80,6 +96,7 @@ Create an admin token with `POST /api/login`, then configure Postman's
 | PUT/PATCH | `http://127.0.0.1:8000/api/admin/books/{id}` | Update an admin book |
 | DELETE | `http://127.0.0.1:8000/api/admin/books/{id}` | Delete an admin book |
 | GET | `http://127.0.0.1:8000/api/admin/sales` | List orders |
+| DELETE | `http://127.0.0.1:8000/api/admin/sales/{id}` | Delete an order |
 | POST | `http://127.0.0.1:8000/api/admin/sales/{id}/paid` | Confirm payment |
 | POST | `http://127.0.0.1:8000/api/admin/sales/{id}/cancel` | Cancel a pending order |
 | GET | `http://127.0.0.1:8000/api/admin/reports` | Get the sales report |
@@ -133,7 +150,12 @@ fields being changed.
 }
 ```
 
-### Checkout
+### Create or update a transaction
+
+Use an existing customer account to log in and attach its token as
+`Authorization: Bearer <token>` for transaction create, show, and update
+requests. The compatible `/api/checkout` route also requires customer
+authentication. Only pending transactions can be updated.
 
 ```json
 {
