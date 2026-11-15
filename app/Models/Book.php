@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['title', 'author_id', 'author', 'genre', 'description', 'price', 'stock', 'is_active', 'isbn', 'cover'])]
+#[Fillable(['title', 'author_id', 'genre_id', 'author', 'genre', 'description', 'price', 'stock', 'is_active', 'isbn', 'cover'])]
 class Book extends Model
 {
     /** @use HasFactory<BookFactory> */
@@ -32,6 +32,14 @@ class Book extends Model
     }
 
     /**
+     * @return BelongsTo<Genre, $this>
+     */
+    public function genreRecord(): BelongsTo
+    {
+        return $this->belongsTo(Genre::class);
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -41,6 +49,7 @@ class Book extends Model
             'stock' => 'integer',
             'is_active' => 'boolean',
             'author_id' => 'integer',
+            'genre_id' => 'integer',
         ];
     }
 }

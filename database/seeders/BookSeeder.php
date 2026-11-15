@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Author;
 use App\Models\Book;
+use App\Models\Genre;
 use Illuminate\Database\Seeder;
 
 class BookSeeder extends Seeder
@@ -58,6 +59,7 @@ class BookSeeder extends Seeder
 
         foreach ($books as $book) {
             $author = Author::query()->where('name', $book['author'])->firstOrFail();
+            $book['genre_id'] = Genre::query()->where('name', $book['genre'])->firstOrFail()->id;
             $book['author_id'] = $author->id;
             $storedBook = Book::query()->firstOrCreate(['title' => $book['title']], $book);
 
@@ -90,6 +92,7 @@ class BookSeeder extends Seeder
 
         foreach ($realBooks as $book) {
             $author = Author::query()->where('name', $book['author'])->firstOrFail();
+            $book['genre_id'] = Genre::query()->where('name', $book['genre'])->firstOrFail()->id;
             $coverPath = 'images/covers/'.$book['isbn'].'.jpg';
             $bookAttributes = [
                 ...$book,
