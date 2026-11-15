@@ -9,12 +9,26 @@ use App\Models\Genre;
 use App\Models\Sale;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class SpaApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_books_use_author_and_genre_foreign_keys_without_legacy_text_columns(): void
+    {
+        $this->assertTrue(Schema::hasColumn('books', 'author_id'));
+        $this->assertTrue(Schema::hasColumn('books', 'genre_id'));
+        $this->assertFalse(Schema::hasColumn('books', 'author'));
+        $this->assertFalse(Schema::hasColumn('books', 'genre'));
+
+        $genre = Genre::query()->firstOrFail();
+        $book = Book::factory()->create(['genre_id' => $genre->id]);
+        $genre->delete();
+        $this->assertNull($book->fresh()->genre_id);
+    }
 
     public function test_registration_creates_a_customer_and_issues_a_sanctum_token(): void
     {
@@ -50,9 +64,7 @@ class SpaApiTest extends TestCase
         Book::factory()->create([
             'title' => 'Judul Unik',
             'author_id' => $author->id,
-            'author' => $author->name,
             'genre_id' => $genre->id,
-            'genre' => $genre->name,
             'isbn' => '111-UNIK',
         ]);
         Book::factory()->create(['title' => 'Buku Tidak Cocok']);
@@ -121,5 +133,31 @@ class SpaApiTest extends TestCase
             ->assertJsonPath('data.user_count', 1);
         $this->getJson('/api/admin/users')->assertOk();
         $this->getJson('/api/admin/sales')->assertOk();
+    }
+
+    public function test_admin_can_confirm_payment_and_update_order_fulfillment_after_checkout(): void
+    {
+        $customer = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
+        $book = Book::factory()->create(['stock' => 3]);
+        Sanctum::actingAs($customer);
+        $created = $this->postJson('/api/checkout', [
+            'customer_name' => 'Pelanggan Uji',
+            'customer_phone' => '08123456789',
+            'shipping_address' => 'Jl. Contoh No. 5, Jakarta',
+            'payment_method' => 'cash',
+            'items' => [['book_id' => $book->id, 'quantity' => 1]],
+        ])->assertCreated();
+        $sale = Sale::query()->where('reference', $created->json('data.reference'))->firstOrFail();
+
+        Sanctum::actingAs($admin);
+        $this->patchJson("/api/admin/sales/{$sale->id}", ['fulfillment_status' => 'processing'])->assertUnprocessable();
+        $this->postJson("/api/admin/sales/{$sale->id}/paid")->assertOk();
+        $this->patchJson("/api/admin/sales/{$sale->id}", ['fulfillment_status' => 'processing'])
+            ->assertOk()
+            ->assertJsonPath('data.fulfillment_status', 'processing');
+
+        Sanctum::actingAs($customer);
+        $this->patchJson("/api/admin/sales/{$sale->id}", ['fulfillment_status' => 'shipped'])->assertForbidden();
     }
 }

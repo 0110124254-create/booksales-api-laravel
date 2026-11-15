@@ -2,37 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Book;
 use App\Models\Genre;
+use App\Models\Book;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
-use Illuminate\View\View;
 
 class GenreController extends Controller
 {
-    public function webIndex(): View
-    {
-        $bookCounts = Book::query()
-            ->where('is_active', true)
-            ->selectRaw('genre, COUNT(*) AS books_count')
-            ->groupBy('genre')
-            ->pluck('books_count', 'genre');
-
-        return view('genres.index', [
-            'books' => Book::query()->where('is_active', true)->orderByDesc('created_at')->orderByDesc('id')->take(5)->get(),
-            'genres' => array_map(
-                static fn (array $genre): array => [
-                    ...$genre,
-                    'books_count' => (int) ($bookCounts[$genre['name']] ?? 0),
-                ],
-                Genre::catalogData(),
-            ),
-        ]);
-    }
-
     public function index(): JsonResponse
     {
         return response()->json([
@@ -91,14 +69,7 @@ class GenreController extends Controller
             return $this->validationError($validator->errors()->toArray());
         }
 
-        $data = $validator->validated();
-        DB::transaction(function () use ($genre, $data): void {
-            if (isset($data['name']) && $genre->name !== $data['name']) {
-                Book::query()->where('genre_id', $genre->id)->update(['genre' => $data['name']]);
-            }
-
-            $genre->update($data);
-        });
+        $genre->update($validator->validated());
 
         return response()->json([
             'success' => true,

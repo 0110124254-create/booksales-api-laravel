@@ -3,24 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Author;
-use App\Models\Book;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
-use Illuminate\View\View;
 
 class AuthorController extends Controller
 {
-    public function webIndex(): View
-    {
-        return view('authors.index', [
-            'authors' => Author::catalogData(),
-            'books' => Book::query()->where('is_active', true)->orderByDesc('created_at')->orderByDesc('id')->take(5)->get(),
-        ]);
-    }
-
     public function index(): JsonResponse
     {
         return response()->json([
@@ -79,17 +68,7 @@ class AuthorController extends Controller
             return $this->validationError($validator->errors()->toArray());
         }
 
-        $data = $validator->validated();
-        DB::transaction(function () use ($author, $data): void {
-            $oldName = $author->name;
-            $author->update($data);
-
-            if (isset($data['name']) && $oldName !== $author->name) {
-                Book::query()
-                    ->where('author_id', $author->id)
-                    ->update(['author' => $author->name]);
-            }
-        });
+        $author->update($validator->validated());
 
         return response()->json([
             'success' => true,

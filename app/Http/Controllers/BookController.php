@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Author;
 use App\Models\Book;
-use App\Models\Genre;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -40,7 +38,6 @@ class BookController extends Controller
             $query->where(function ($query) use ($search): void {
                 $query->where('title', 'like', '%'.$search.'%')
                     ->orWhere('isbn', 'like', '%'.$search.'%')
-                    ->orWhere('author', 'like', '%'.$search.'%')
                     ->orWhereHas('authorRecord', fn ($author) => $author->where('name', 'like', '%'.$search.'%'));
             });
         }
@@ -160,10 +157,8 @@ class BookController extends Controller
     {
         return [
             'title' => [$partial ? 'sometimes' : 'required', 'string', 'max:255'],
-            'author_id' => [$partial ? 'sometimes' : 'required_without:author', 'nullable', 'integer', 'exists:authors,id'],
-            'author' => [$partial ? 'sometimes' : 'required_without:author_id', 'nullable', 'string', 'max:255'],
-            'genre_id' => [$partial ? 'sometimes' : 'required_without:genre', 'nullable', 'integer', 'exists:genres,id'],
-            'genre' => [$partial ? 'sometimes' : 'required_without:genre_id', 'nullable', 'string', Rule::exists('genres', 'name')],
+            'author_id' => [$partial ? 'sometimes' : 'required', 'integer', 'exists:authors,id'],
+            'genre_id' => [$partial ? 'sometimes' : 'required', 'integer', 'exists:genres,id'],
             'description' => [$partial ? 'sometimes' : 'nullable', 'nullable', 'string'],
             'price' => [$partial ? 'sometimes' : 'required', 'integer', 'min:0'],
             'stock' => [$partial ? 'sometimes' : 'required', 'integer', 'min:0'],
@@ -176,20 +171,6 @@ class BookController extends Controller
     /** @param array<string, mixed> $data @return array<string, mixed> */
     private function bookData(array $data): array
     {
-        if (isset($data['author_id'])) {
-            $data['author'] = Author::query()->findOrFail($data['author_id'])->name;
-        } elseif (isset($data['author'])) {
-            $data['author_id'] = Author::query()->where('name', $data['author'])->value('id');
-        }
-
-        if (isset($data['genre_id'])) {
-            $genre = Genre::query()->findOrFail($data['genre_id']);
-            $data['genre'] = $genre->name;
-        } elseif (isset($data['genre'])) {
-            $genre = Genre::query()->where('name', $data['genre'])->firstOrFail();
-            $data['genre_id'] = $genre->id;
-        }
-
         unset($data['cover_upload']);
 
         return $data;

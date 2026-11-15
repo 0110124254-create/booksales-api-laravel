@@ -8,7 +8,6 @@ use App\Models\ContactMessage;
 use App\Models\Genre;
 use App\Models\Sale;
 use App\Models\User;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 
 class AdminDashboardController extends Controller
@@ -29,15 +28,4 @@ class AdminDashboardController extends Controller
         ]);
     }
 
-    public function index(): View
-    {
-        return view('admin.dashboard', [
-            'bookCount' => Book::query()->count(),
-            'genreCount' => Genre::query()->count(),
-            'authorCount' => Author::query()->count(),
-            'saleCount' => Sale::query()->count(),
-            'userCount' => User::query()->where('is_admin', false)->count(),
-            'unreadMessageCount' => ContactMessage::query()->whereNull('read_at')->count(),
-        ]);
-    }
 }

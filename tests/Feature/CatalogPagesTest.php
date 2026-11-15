@@ -41,7 +41,7 @@ class CatalogPagesTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('data.name', 'Genre SPA');
         $genre = Genre::query()->findOrFail($created->json('data.id'));
-        $book = Book::factory()->create(['genre_id' => $genre->id, 'genre' => $genre->name]);
+        $book = Book::factory()->create(['genre_id' => $genre->id]);
 
         $this->patchJson("/api/genres/{$genre->id}", ['name' => 'Genre React'])
             ->assertOk()
@@ -63,7 +63,7 @@ class CatalogPagesTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('data.name', 'Penulis SPA');
         $author = Author::query()->findOrFail($created->json('data.id'));
-        $book = Book::factory()->create(['author_id' => $author->id, 'author' => $author->name]);
+        $book = Book::factory()->create(['author_id' => $author->id]);
 
         $this->patchJson("/api/authors/{$author->id}", ['name' => 'Penulis React'])->assertOk();
         $this->assertSame('Penulis React', $book->fresh()->authorRecord->name);

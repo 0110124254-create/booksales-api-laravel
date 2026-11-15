@@ -15,19 +15,4 @@ class Genre extends Model
         return $this->hasMany(Book::class);
     }
 
-    /**
-     * @return list<array{id: int, name: string, description: ?string}>
-     */
-    public static function catalogData(): array
-    {
-        return static::query()
-            ->orderBy('id')
-            ->get()
-            ->map(static fn (self $genre): array => [
-                'id' => (int) $genre->getKey(),
-                'name' => $genre->name,
-                'description' => $genre->description,
-            ])
-            ->all();
-    }
 }

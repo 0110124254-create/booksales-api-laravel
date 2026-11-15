@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Author;
 use App\Models\Book;
+use App\Models\Genre;
 use App\Models\Sale;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
@@ -33,14 +34,18 @@ class BookSalesTest extends TestCase
             ->assertJsonFragment(['title' => 'Buku Contoh']);
     }
 
-    public function test_database_seeder_creates_five_authors_and_ten_isbn_linked_books(): void
+    public function test_database_seeder_creates_demo_accounts_and_a_relational_catalog(): void
     {
         $this->seed(DatabaseSeeder::class);
 
         $this->assertDatabaseCount('authors', 5);
+        $this->assertDatabaseCount('genres', 5);
         $this->assertDatabaseCount('books', 15);
         $this->assertSame(15, Book::query()->whereNotNull('author_id')->count());
+        $this->assertSame(15, Book::query()->whereNotNull('genre_id')->count());
         $this->assertSame(10, Book::query()->whereNotNull('isbn')->count());
+        $this->assertDatabaseHas('users', ['email' => 'superadmin@gmail.com', 'is_admin' => true]);
+        $this->assertDatabaseHas('users', ['email' => 'user@gmail.com', 'is_admin' => false]);
         $this->assertSame(3, Author::query()->where('name', 'Andrea Hirata')->firstOrFail()->books()->count());
     }
 
@@ -57,7 +62,7 @@ class BookSalesTest extends TestCase
             'customer_email' => 'pelanggan@example.test',
             'customer_phone' => '08123456789',
             'shipping_address' => 'Jl. Contoh No. 10, Jakarta',
-            'payment_method' => 'bank_transfer',
+            'payment_method' => 'cash',
             'items' => [
                 ['book_id' => $book->id, 'quantity' => 2],
             ],
@@ -108,10 +113,11 @@ class BookSalesTest extends TestCase
     public function test_book_resource_requires_admin_for_writes_and_supports_crud(): void
     {
         $author = Author::factory()->create(['name' => 'Author Contoh']);
+        $genre = Genre::query()->firstOrFail();
         $body = [
             'title' => 'Buku Admin',
             'author_id' => $author->id,
-            'genre' => 'Fiksi',
+            'genre_id' => $genre->id,
             'description' => 'Deskripsi buku.',
             'price' => 50000,
             'stock' => 10,
@@ -123,7 +129,7 @@ class BookSalesTest extends TestCase
         Sanctum::actingAs(User::factory()->create(['is_admin' => true]));
         $created = $this->postJson('/api/books', $body)
             ->assertCreated()
-            ->assertJsonPath('data.author', 'Author Contoh');
+            ->assertJsonPath('data.author_id', $author->id);
 
         $bookId = $created->json('data.id');
         $this->getJson("/api/books/{$bookId}")
@@ -143,7 +149,7 @@ class BookSalesTest extends TestCase
         $this->assertDatabaseHas('books', [
             'id' => $bookId,
             'author_id' => $author->id,
-            'author' => 'Author Contoh',
+            'genre_id' => $genre->id,
             'title' => 'Buku Parsial',
         ]);
 
@@ -158,7 +164,7 @@ class BookSalesTest extends TestCase
 
         $this->postJson('/api/books', [
             'title' => '',
-            'genre' => [],
+            'genre_id' => [],
             'price' => -1,
             'stock' => -1,
         ])->assertUnprocessable()
@@ -166,7 +172,7 @@ class BookSalesTest extends TestCase
             ->assertJsonPath('message', 'Validation failed')
             ->assertJsonPath('data', null)
             ->assertJsonPath('errors.title.0', 'The title field is required.')
-            ->assertJsonValidationErrors(['title', 'genre', 'price', 'stock']);
+            ->assertJsonValidationErrors(['title', 'author_id', 'genre_id', 'price', 'stock']);
 
         $this->assertDatabaseCount('books', 0);
     }
@@ -224,7 +230,7 @@ class BookSalesTest extends TestCase
             'customer_name' => 'Pelanggan Kedua',
             'customer_phone' => '08123456789',
             'shipping_address' => 'Jl. Contoh No. 10, Jakarta',
-            'payment_method' => 'bank_transfer',
+            'payment_method' => 'cash',
             'items' => [['book_id' => $book->id, 'quantity' => 1]],
         ])->assertCreated();
         $pendingSale = Sale::query()->where('reference', $cancelResponse->json('data.reference'))->firstOrFail();

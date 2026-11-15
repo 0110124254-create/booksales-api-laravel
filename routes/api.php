@@ -37,7 +37,6 @@ Route::apiResource('authors', AuthorController::class)
     ->only(['store', 'update', 'destroy'])
     ->middleware(['auth:sanctum', 'can:access-admin']);
 
-Route::get('/login', [AuthController::class, 'create'])->name('api.login');
 Route::post('/login', [AuthController::class, 'store'])->middleware('throttle:5,1')->name('api.login.store');
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1')->name('api.register');
 Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth:sanctum')->name('api.logout');
