@@ -8,11 +8,59 @@ use App\Models\Genre;
 use App\Models\SaleItem;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class AdminBookManagementTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_admin_can_upload_and_replace_a_real_book_cover(): void
+    {
+        $author = Author::factory()->create();
+        $genre = Genre::query()->firstOrFail();
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+
+        $fields = [
+            'title' => 'Buku Dengan Sampul',
+            'author_id' => $author->id,
+            'genre' => $genre->name,
+            'price' => 45000,
+            'stock' => 5,
+            'is_active' => '1',
+        ];
+        $temporaryDirectory = storage_path('framework/testing/book-cover-uploads');
+        File::ensureDirectoryExists($temporaryDirectory);
+        $firstSource = $temporaryDirectory.'/first-'.Str::uuid().'.jpg';
+        $secondSource = $temporaryDirectory.'/second-'.Str::uuid().'.jpg';
+        File::copy(public_path('images/covers/9786020639536.jpg'), $firstSource);
+        File::copy(public_path('images/covers/9786022910527.jpg'), $secondSource);
+        $firstImage = new UploadedFile($firstSource, 'sampul.jpg', 'image/jpeg', null, true);
+
+        $this->post(route('admin.web-books.store'), [...$fields, 'cover_upload' => $firstImage])
+            ->assertRedirect(route('admin.web-books.index'));
+
+        $book = Book::query()->where('title', $fields['title'])->firstOrFail();
+        $oldCover = $book->cover;
+        $this->assertStringStartsWith('images/covers/uploads/', $oldCover);
+        $this->assertFileExists(public_path($oldCover));
+
+        $secondImage = new UploadedFile($secondSource, 'sampul-baru.jpg', 'image/jpeg', null, true);
+        $this->put(route('admin.web-books.update', $book), [...$fields, 'cover_upload' => $secondImage])
+            ->assertRedirect(route('admin.web-books.index'));
+
+        $book->refresh();
+        $this->assertNotSame($oldCover, $book->cover);
+        $this->assertFileDoesNotExist(public_path($oldCover));
+        $this->assertFileExists(public_path($book->cover));
+
+        File::delete(public_path($book->cover));
+        File::delete([$firstSource, $secondSource]);
+        $this->assertFileExists(public_path('images/covers/9786020639536.jpg'));
+        $this->assertFileExists(public_path('images/covers/9786022910527.jpg'));
+    }
 
     public function test_admin_can_create_update_and_delete_books_from_the_dashboard(): void
     {
@@ -40,6 +88,7 @@ class AdminBookManagementTest extends TestCase
             'price' => 65000,
             'stock' => 8,
             'is_active' => '1',
+            'isbn' => '9789793062792',
         ])->assertRedirect(route('admin.web-books.index'))
             ->assertSessionHas('status', 'Buku berhasil ditambahkan.');
 
@@ -52,6 +101,7 @@ class AdminBookManagementTest extends TestCase
             'price' => 65000,
             'stock' => 8,
             'is_active' => true,
+            'isbn' => '9789793062792',
         ]);
 
         $this->get(route('admin.web-books.edit', $book))
@@ -67,6 +117,7 @@ class AdminBookManagementTest extends TestCase
             'price' => 70000,
             'stock' => 0,
             'is_active' => '0',
+            'isbn' => '9789793062921',
         ])->assertRedirect(route('admin.web-books.index'))
             ->assertSessionHas('status', 'Buku berhasil diperbarui.');
 
@@ -76,6 +127,7 @@ class AdminBookManagementTest extends TestCase
             'price' => 70000,
             'stock' => 0,
             'is_active' => false,
+            'isbn' => '9789793062921',
         ]);
         $this->get('/')
             ->assertOk()

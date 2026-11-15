@@ -19,6 +19,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'payment_status',
     'paid_at',
     'total',
+    'shipping_address',
+    'midtrans_token',
+    'midtrans_redirect_url',
+    'fulfillment_status',
 ])]
 class Sale extends Model
 {

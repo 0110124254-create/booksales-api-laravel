@@ -1,0 +1,7 @@
+@extends('layouts.catalog')
+@section('title', 'Pesan Pengguna')
+@section('content')
+<section class="mx-auto max-w-6xl px-5 py-12 sm:px-8"><p class="text-xs font-bold uppercase tracking-wider text-violet-800">Admin</p><h1 class="mt-2 text-4xl font-black">Pesan dari pengguna</h1>
+    <div class="mt-7 space-y-4">@forelse ($messages as $message)<article class="rounded-2xl border border-stone-200 bg-white p-5"><div class="flex flex-wrap justify-between gap-3"><div><h2 class="font-black">{{ $message->subject }}</h2><p class="mt-1 text-sm text-stone-600">{{ $message->name }} · <a class="text-violet-900 underline" href="mailto:{{ $message->email }}">{{ $message->email }}</a> · {{ $message->created_at->format('d/m/Y H:i') }}</p></div>@if ($message->read_at)<span class="h-fit rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-900">Dibaca</span>@else<form method="POST" action="{{ route('admin.contacts.update', $message) }}">@csrf @method('PATCH')<button class="rounded-full border border-stone-300 px-4 py-2 text-xs font-bold">Tandai dibaca</button></form>@endif</div><p class="mt-4 whitespace-pre-line text-sm leading-6 text-stone-700">{{ $message->message }}</p></article>@empty<div class="rounded-2xl border border-dashed border-stone-300 bg-white p-9 text-center text-stone-500">Belum ada pesan masuk.</div>@endforelse</div><div class="mt-5">{{ $messages->links() }}</div>
+</section>
+@endsection

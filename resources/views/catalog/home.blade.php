@@ -1,136 +1,120 @@
-<div>
-    <!-- Simplicity is the ultimate sophistication. - Leonardo da Vinci -->
-</div>
 @extends('layouts.catalog')
 
-@section('title', 'Katalog Buku')
+@section('title', $selectedGenre ? 'Buku '.$selectedGenre->name : 'Beranda')
 
 @section('content')
-    @php
-        $bookCovers = [
-            'Belajar Sains Dasar' => 'belajar-sains-dasar.svg',
-            'Catatan Kehidupan' => 'catatan-kehidupan.svg',
-            'Mengenal Teknologi' => 'mengenal-teknologi.svg',
-            'Petualangan di Pulau' => 'petualangan-di-pulau.svg',
-            'Sejarah Nusantara' => 'sejarah-nusantara.svg',
-        ];
-    @endphp
-
-    <section class="mx-auto grid max-w-7xl gap-10 px-5 py-12 sm:px-8 sm:py-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-14 lg:py-20">
-        <div class="max-w-2xl">
-            <p class="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-900">
-                <span class="size-2 rounded-full bg-emerald-600"></span>
-                Ruang untuk cerita
-            </p>
-            <h1 class="text-4xl font-black leading-[1.08] tracking-tight text-stone-950 sm:text-5xl lg:text-6xl">Temukan buku yang <span class="text-emerald-800">memanggil</span> namamu.</h1>
-            <p class="mt-6 max-w-xl text-base leading-7 text-stone-600 sm:text-lg sm:leading-8">Jelajahi pilihan bacaan dari penulis Indonesia, temukan genre favoritmu, dan temukan ide baru di setiap halaman.</p>
-            <div class="mt-8 flex flex-wrap gap-3">
-                <a href="#koleksi" class="rounded-full bg-emerald-950 px-6 py-3.5 text-sm font-bold text-white shadow-md shadow-emerald-950/10 transition hover:-translate-y-0.5 hover:bg-emerald-800">Jelajahi koleksi <span class="ml-1" aria-hidden="true">↓</span></a>
-                <a href="{{ route('catalog.genres.index') }}" class="rounded-full border border-stone-300 bg-white px-6 py-3.5 text-sm font-bold text-stone-800 transition hover:border-emerald-700 hover:text-emerald-900">Lihat genre</a>
-            </div>
-            <div class="mt-10 flex flex-wrap gap-x-8 gap-y-4 border-t border-stone-200 pt-6 text-sm text-stone-600">
-                <span><strong class="mr-1 text-2xl font-black tracking-tight text-stone-950">{{ $books->count() }}</strong> buku pilihan</span>
-                <span><strong class="mr-1 text-2xl font-black tracking-tight text-stone-950">{{ $genreCount }}</strong> genre</span>
-                <span><strong class="mr-1 text-2xl font-black tracking-tight text-stone-950">{{ $authorCount }}</strong> penulis</span>
-            </div>
-        </div>
-
-        <div class="relative mx-auto w-full max-w-xl">
-            <div class="absolute -inset-4 rounded-[2.5rem] bg-amber-200/50 blur-2xl"></div>
-            <div class="relative min-h-[24rem] overflow-hidden rounded-[2rem] bg-emerald-950 px-6 py-7 shadow-2xl shadow-emerald-950/15 sm:min-h-[30rem] sm:px-8">
-                <div class="absolute -right-16 -top-20 size-64 rounded-full border border-white/10"></div>
-                <div class="absolute -right-5 -top-9 size-44 rounded-full border border-white/10"></div>
-                <div class="absolute bottom-0 left-0 h-36 w-full bg-gradient-to-t from-black/25 to-transparent"></div>
-                <div class="relative z-20 flex items-start justify-between gap-4">
-                    <div>
-                        <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-200">Rak pilihan</p>
-                        <p class="mt-2 max-w-[13rem] text-xl font-bold leading-snug text-white sm:text-2xl">Satu buku, dunia yang berbeda.</p>
-                    </div>
-                    <span class="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-emerald-50">Pilihan minggu ini</span>
+    @if (! $selectedGenre && ! $search && $featuredBooks->isNotEmpty())
+        <section class="catalog-hero" aria-label="Buku pilihan">
+            <img class="catalog-hero__photo" src="{{ asset('images/hero/library.jpg') }}" alt="Deretan buku di perpustakaan" width="2000" height="2670" onerror="this.hidden=true">
+            <div class="catalog-hero__shade"></div>
+            <div class="catalog-hero__content">
+                <div class="catalog-hero__copy" data-feature-copy>
+                    @php($featuredBook = $featuredBooks->first())
+                    <p class="eyebrow">Ruang untuk cerita</p>
+                    <h1 data-feature-title>{{ $featuredBook->title }}</h1>
+                    <p class="catalog-hero__author" data-feature-author>{{ $featuredBook->author }}</p>
+                    <p class="catalog-hero__description" data-feature-description>{{ $featuredBook->description ?: 'Temukan kisah dan gagasan baru di setiap halaman.' }}</p>
+                    <a class="catalog-hero__link" href="{{ route('catalog.books.show', $featuredBook) }}" data-feature-link>Lihat buku <span aria-hidden="true">→</span></a>
                 </div>
-
-                @forelse ($books->take(3)->values() as $index => $featuredBook)
-                    @php
-                        $coverPosition = match ($index) {
-                            0 => 'left-[12%] top-[34%] rotate-[-12deg]',
-                            1 => 'left-1/2 top-[24%] z-10 -translate-x-1/2 rotate-[2deg]',
-                            default => 'right-[12%] top-[34%] rotate-[12deg]',
-                        };
-                    @endphp
-                    <div @class(['absolute w-32 overflow-hidden rounded-lg border-4 border-white/90 bg-white shadow-2xl shadow-black/30 transition duration-300 hover:z-20 hover:-translate-y-2 sm:w-40', $coverPosition])>
-                        <img
-                            src="{{ asset('images/books/'.($bookCovers[$featuredBook->title] ?? 'book-default.svg')) }}"
-                            alt="Sampul buku {{ $featuredBook->title }}"
-                            class="aspect-[3/4] w-full object-cover"
-                            width="400"
-                            height="600"
-                            @if ($index > 0) loading="lazy" @endif
-                        >
-                    </div>
-                @empty
-                    <div class="absolute inset-x-8 bottom-20 rounded-2xl border border-white/15 bg-white/10 p-5 text-sm leading-6 text-emerald-50">
-                        Katalog pilihan akan tampil di sini setelah buku ditambahkan.
-                    </div>
-                @endforelse
-
-                <div class="absolute inset-x-6 bottom-6 z-20 flex items-center justify-between gap-4 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur sm:inset-x-8 sm:bottom-8 sm:px-5">
-                    <div>
-                        <p class="text-sm font-bold text-white">Baca, temukan, bertumbuh.</p>
-                        <p class="mt-0.5 text-xs text-emerald-100/80">Cerita baik selalu punya tempat.</p>
-                    </div>
-                    <a href="{{ route('catalog.authors.index') }}" class="shrink-0 text-sm font-bold text-amber-200 transition hover:text-white">Para penulis <span aria-hidden="true">→</span></a>
+                <div class="featured-thumbnails" role="group" aria-label="Pilih buku unggulan">
+                    @foreach ($featuredBooks as $index => $book)
+                        <button type="button" class="featured-thumbnails__item {{ $index === 0 ? 'is-active' : '' }}" data-featured-book
+                            data-title="{{ $book->title }}" data-author="{{ $book->author }}" data-description="{{ $book->description ?: 'Temukan kisah dan gagasan baru di setiap halaman.' }}" data-url="{{ route('catalog.books.show', $book) }}" aria-label="Tampilkan {{ $book->title }}" aria-pressed="{{ $index === 0 ? 'true' : 'false' }}">
+                            @if ($book->cover)
+                                <img src="{{ asset($book->cover) }}" alt="{{ $book->title }}" width="400" height="600" loading="lazy" onerror="this.hidden=true">
+                            @else
+                                <span class="featured-thumbnails__empty">{{ $book->title }}</span>
+                            @endif
+                        </button>
+                    @endforeach
                 </div>
             </div>
+            <p class="catalog-hero__credit">Foto: <a href="https://unsplash.com/@ninjason" target="_blank" rel="noopener">Jason Leung</a> / <a href="https://unsplash.com/photos/a-library-aisle-with-bookshelves-and-sunlight-through-window-xmeRBPunJR8" target="_blank" rel="noopener">Unsplash License</a></p>
+        </section>
+    @elseif ($selectedGenre)
+        <section class="catalog-page-heading">
+            <a href="{{ route('catalog.genres.index') }}" class="text-link">← Semua genre</a>
+            <p class="eyebrow">Koleksi pilihan</p>
+            <h1>Buku genre {{ $selectedGenre->name }}</h1>
+            <p>{{ $selectedGenre->description ?: 'Temukan bacaan pilihan dalam genre ini.' }}</p>
+        </section>
+    @endif
+
+    <nav class="catalog-tabs" aria-label="Kategori koleksi" data-catalog-tabs>
+        <button type="button" class="is-active" data-tab="Terbaru" aria-pressed="true">Terbaru</button>
+        <button type="button" data-tab="Promo" aria-pressed="false">Promo</button>
+        <button type="button" data-tab="Buku" aria-pressed="false">Buku</button>
+        <button type="button" data-tab="E-Book" aria-pressed="false">E-Book</button>
+        <button type="button" data-tab="Audio" aria-pressed="false">Audio</button>
+        <button type="button" data-tab="Event" aria-pressed="false">Event</button>
+    </nav>
+
+    <section id="koleksi" class="catalog-section">
+        <div class="catalog-section__heading">
+            <div>
+                <p class="eyebrow">Dari rak pilihan</p>
+                <h2><span class="book-mark" aria-hidden="true">▤</span> {{ $selectedGenre ? 'Koleksi '.$selectedGenre->name : 'Terbaru' }}</h2>
+                @if ($selectedGenre)
+                    <a class="catalog-see-all" href="{{ route('books.catalog') }}#koleksi">Lihat semua buku →</a>
+                @endif
+            </div>
+            @if ($search)
+                <p class="catalog-section__summary">Hasil pencarian untuk “{{ $search }}”.</p>
+            @else
+                <p class="catalog-section__summary">{{ $books->count() }} buku pilihan · {{ $genreCount }} genre · {{ $authorCount }} penulis</p>
+            @endif
         </div>
+
+        @if ($selectedGenre || $search)
+            <form method="GET" action="{{ route('books.catalog') }}" class="catalog-search-inline">
+                @if ($selectedGenre)<input type="hidden" name="genre" value="{{ $selectedGenre->name }}">@endif
+                <label class="sr-only" for="catalog-query">Cari buku, penulis, atau deskripsi</label>
+                <input id="catalog-query" type="search" name="q" value="{{ $search }}" placeholder="Cari judul buku atau penulis...">
+                <button type="submit">Cari buku</button>
+            </form>
+        @endif
+
+        <div class="book-grid" data-book-grid>
+            @forelse ($books as $book)
+                <x-book-card :book="$book" />
+            @empty
+                <p class="catalog-empty">Belum ada buku yang cocok dengan pilihan ini. <a href="{{ route('books.catalog') }}">Lihat semua buku</a></p>
+            @endforelse
+        </div>
+        <p class="catalog-empty" data-catalog-empty hidden>Belum ada koleksi untuk kategori ini.</p>
     </section>
 
-    <section id="koleksi" class="scroll-mt-24 border-y border-stone-200/70 bg-white">
-        <div class="mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-16">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-800">Dari rak pilihan</p>
-                    <h2 class="mt-2 text-3xl font-black tracking-tight text-stone-950 sm:text-4xl">Koleksi buku</h2>
-                </div>
-                <p class="max-w-md text-sm leading-6 text-stone-600">Buku di halaman ini dimuat langsung dari katalog. Genre dan penulis juga bisa kamu jelajahi.</p>
-            </div>
+    <script>
+        document.querySelectorAll('[data-featured-book]').forEach((button) => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('[data-featured-book]').forEach((item) => {
+                    item.classList.toggle('is-active', item === button);
+                    item.setAttribute('aria-pressed', item === button ? 'true' : 'false');
+                });
+                document.querySelector('[data-feature-title]').textContent = button.dataset.title;
+                document.querySelector('[data-feature-author]').textContent = button.dataset.author;
+                document.querySelector('[data-feature-description]').textContent = button.dataset.description;
+                document.querySelector('[data-feature-link]').href = button.dataset.url;
+            });
+        });
 
-            <div class="mt-9 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                @forelse ($books as $book)
-                    <article class="group overflow-hidden rounded-3xl border border-stone-200 bg-white transition duration-300 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl hover:shadow-stone-900/[0.07]">
-                        <div class="flex aspect-[4/3] items-center justify-center overflow-hidden bg-[#f1efe8] p-5 sm:p-7">
-                            <img
-                                src="{{ asset('images/books/'.($bookCovers[$book->title] ?? 'book-default.svg')) }}"
-                                alt="Sampul buku {{ $book->title }}"
-                                class="h-full w-auto rounded-sm object-contain shadow-xl shadow-stone-900/15 transition duration-300 group-hover:scale-[1.03]"
-                                width="400"
-                                height="600"
-                                loading="lazy"
-                            >
-                        </div>
-                        <div class="space-y-4 p-5 sm:p-6">
-                            <div>
-                                <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-900">{{ $book->genre }}</span>
-                                <h3 class="mt-4 text-xl font-black text-stone-950">{{ $book->title }}</h3>
-                                <p class="text-sm font-semibold text-stone-700">Oleh {{ $book->author }}</p>
-                                @if ($book->description)
-                                    <p class="mt-2 text-sm leading-6 text-stone-600">{{ $book->description }}</p>
-                                @endif
-                            </div>
-                            <div class="flex items-center justify-between border-t border-stone-200 pt-4">
-                                <p class="text-lg font-black text-emerald-950">Rp{{ number_format($book->price, 0, ',', '.') }}</p>
-                                <span @class(['rounded-full px-3 py-1 text-xs font-bold', 'bg-emerald-100 text-emerald-900' => $book->stock > 0, 'bg-stone-200 text-stone-600' => $book->stock === 0])>
-                                    {{ $book->stock > 0 ? 'Stok '.$book->stock : 'Stok habis' }}
-                                </span>
-                            </div>
-                        </div>
-                    </article>
-                @empty
-                    <div class="col-span-full rounded-3xl border border-dashed border-stone-300 bg-stone-50 px-6 py-12 text-center">
-                        <p class="text-lg font-bold text-stone-900">Katalog buku sedang disiapkan.</p>
-                        <p class="mt-2 text-sm text-stone-600">Jalankan seeder aplikasi untuk menampilkan lima buku contoh.</p>
-                    </div>
-                @endforelse
-            </div>
-        </div>
-    </section>
+        const catalogTabs = document.querySelector('[data-catalog-tabs]');
+        const bookGrid = document.querySelector('[data-book-grid]');
+        const catalogEmpty = document.querySelector('[data-catalog-empty]');
+        catalogTabs?.querySelectorAll('[data-tab]').forEach((tab) => {
+            tab.addEventListener('click', () => {
+                catalogTabs.querySelectorAll('[data-tab]').forEach((item) => {
+                    item.classList.toggle('is-active', item === tab);
+                    item.setAttribute('aria-pressed', item === tab ? 'true' : 'false');
+                });
+                const cards = [...(bookGrid?.querySelectorAll('[data-book-card]') ?? [])];
+                const type = tab.dataset.tab;
+                cards.forEach((card) => {
+                    const show = type === 'Terbaru' || type === 'Buku';
+                    card.hidden = !show;
+                });
+                if (catalogEmpty) catalogEmpty.hidden = cards.some((card) => !card.hidden);
+            });
+        });
+    </script>
 @endsection

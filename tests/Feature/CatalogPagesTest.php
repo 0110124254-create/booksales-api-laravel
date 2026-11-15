@@ -45,8 +45,8 @@ class CatalogPagesTest extends TestCase
             ->assertOk()
             ->assertViewIs('catalog.home')
             ->assertSeeText('Buku API')
-            ->assertSee('alt="Sampul buku Buku API"', false)
-            ->assertSee('src="'.asset('images/books/book-default.svg').'"', false)
+            ->assertSee('class="book-card__fallback">Buku API</div>', false)
+            ->assertSee('href="'.route('catalog.books.show', 1).'"', false)
             ->assertSee('href="'.route('catalog.genres.index').'"', false)
             ->assertSee('href="'.route('catalog.authors.index').'"', false);
 
@@ -56,17 +56,66 @@ class CatalogPagesTest extends TestCase
             ->assertJsonFragment(['title' => 'Buku API']);
     }
 
-    public function test_book_catalog_displays_local_cover_images_for_seeded_books(): void
+    public function test_book_catalog_seeds_isbn_books_without_rendering_fake_cover_art(): void
     {
         $this->seed(DatabaseSeeder::class);
 
         $this->get('/')
             ->assertOk()
-            ->assertSee('src="'.asset('images/books/belajar-sains-dasar.svg').'"', false)
-            ->assertSee('src="'.asset('images/books/catatan-kehidupan.svg').'"', false)
-            ->assertSee('src="'.asset('images/books/mengenal-teknologi.svg').'"', false)
-            ->assertSee('src="'.asset('images/books/petualangan-di-pulau.svg').'"', false)
-            ->assertSee('src="'.asset('images/books/sejarah-nusantara.svg').'"', false);
+            ->assertSeeText('Laskar Pelangi')
+            ->assertDontSee('images/books/', false);
+
+        $this->assertSame(10, Book::query()->whereNotNull('isbn')->count());
+        $this->assertSame(10, Book::query()->where('is_active', true)->count());
+        $coveredBooks = Book::query()->whereNotNull('isbn')->whereNotNull('cover')->get();
+        $this->assertCount(10, $coveredBooks);
+        foreach ($coveredBooks as $book) {
+            $this->assertFileExists(public_path($book->cover));
+        }
+    }
+
+    public function test_selecting_a_genre_opens_the_catalog_filtered_to_active_books(): void
+    {
+        Book::factory()->create([
+            'title' => 'Cerita Fiksi Pilihan',
+            'genre' => 'Fiksi',
+            'is_active' => true,
+        ]);
+        Book::factory()->create([
+            'title' => 'Buku Nonfiksi Pilihan',
+            'genre' => 'Nonfiksi',
+            'is_active' => true,
+        ]);
+        Book::factory()->create([
+            'title' => 'Naskah Fiksi Tersembunyi',
+            'genre' => 'Fiksi',
+            'is_active' => false,
+        ]);
+
+        $this->get('/genres')
+            ->assertOk()
+            ->assertSee('href="'.route('books.catalog', ['genre' => 'Fiksi']).'"', false)
+            ->assertSeeText('1 buku')
+            ->assertSeeText('Lihat koleksi');
+
+        $response = $this->get('/books?genre=Fiksi')
+            ->assertOk()
+            ->assertViewIs('catalog.home')
+            ->assertSeeText('Buku genre Fiksi')
+            ->assertSeeText('Cerita Fiksi Pilihan')
+            ->assertSeeText('Lihat semua buku')
+            ->assertDontSeeText('Buku Nonfiksi Pilihan')
+            ->assertDontSeeText('Naskah Fiksi Tersembunyi');
+
+        $this->assertSame('Fiksi', $response->viewData('selectedGenre')->name);
+        $this->assertCount(1, $response->viewData('books'));
+    }
+
+    public function test_catalog_rejects_a_genre_filter_that_does_not_exist(): void
+    {
+        $this->get('/books?genre=Genre-Tidak-Ada')
+            ->assertRedirect('/')
+            ->assertSessionHasErrors('genre');
     }
 
     public function test_genre_view_displays_five_records_as_model_arrays(): void
@@ -97,6 +146,31 @@ class CatalogPagesTest extends TestCase
 
         $this->assertIsArray($authors);
         $this->assertCount(5, $authors);
+    }
+
+    public function test_author_view_counts_only_active_books_for_display(): void
+    {
+        $author = Author::factory()->create();
+
+        Book::factory()->create([
+            'author_id' => $author->id,
+            'author' => $author->name,
+            'is_active' => true,
+        ]);
+        Book::factory()->create([
+            'author_id' => $author->id,
+            'author' => $author->name,
+            'is_active' => false,
+        ]);
+
+        $response = $this->get('/authors')
+            ->assertOk()
+            ->assertViewIs('authors.index');
+
+        $authors = $response->viewData('authors');
+
+        $this->assertCount(1, $authors);
+        $this->assertSame(1, $authors[0]['books_count']);
     }
 
     public function test_genre_and_author_views_escape_untrusted_model_data(): void
@@ -146,7 +220,7 @@ class CatalogPagesTest extends TestCase
             ->assertSeeText('admin@example.test');
     }
 
-    public function test_browser_login_rejects_non_admin_accounts(): void
+    public function test_browser_login_accepts_customer_accounts(): void
     {
         User::factory()->create([
             'email' => 'customer@example.test',
@@ -156,10 +230,9 @@ class CatalogPagesTest extends TestCase
         $this->post('/login', [
             'email' => 'customer@example.test',
             'password' => 'a-strong-password',
-        ])->assertRedirect()
-            ->assertSessionHasErrors('email');
+        ])->assertRedirect(route('home'));
 
-        $this->assertGuest('web');
+        $this->assertAuthenticatedAs(User::query()->where('email', 'customer@example.test')->firstOrFail(), 'web');
     }
 
     public function test_browser_login_rejects_an_incorrect_admin_password(): void

@@ -33,14 +33,15 @@ class BookSalesTest extends TestCase
             ->assertJsonFragment(['title' => 'Buku Contoh']);
     }
 
-    public function test_database_seeder_creates_five_authors_and_five_linked_books(): void
+    public function test_database_seeder_creates_five_authors_and_ten_isbn_linked_books(): void
     {
         $this->seed(DatabaseSeeder::class);
 
         $this->assertDatabaseCount('authors', 5);
-        $this->assertDatabaseCount('books', 5);
-        $this->assertSame(5, Book::query()->whereNotNull('author_id')->count());
-        $this->assertSame(1, Author::query()->where('name', 'Andrea Hirata')->firstOrFail()->books()->count());
+        $this->assertDatabaseCount('books', 15);
+        $this->assertSame(15, Book::query()->whereNotNull('author_id')->count());
+        $this->assertSame(10, Book::query()->whereNotNull('isbn')->count());
+        $this->assertSame(3, Author::query()->where('name', 'Andrea Hirata')->firstOrFail()->books()->count());
     }
 
     public function test_checkout_records_order_and_decreases_stock(): void
@@ -301,6 +302,14 @@ class BookSalesTest extends TestCase
         $this->getJson("/api/sales/{$sale->reference}")->assertUnauthorized();
         $this->patchJson("/api/sales/{$sale->reference}", ['customer_name' => 'Baru'])->assertUnauthorized();
         $this->getJson("/api/orders/{$sale->reference}")->assertUnauthorized();
+    }
+
+    public function test_browser_visiting_the_api_order_link_is_sent_to_the_web_order_page(): void
+    {
+        $sale = Sale::factory()->create();
+
+        $this->get("/api/orders/{$sale->reference}", ['Accept' => 'text/html'])
+            ->assertRedirect(route('orders.show', $sale->reference));
     }
 
     public function test_customer_cannot_list_or_delete_sales_and_admin_cannot_use_customer_crud(): void

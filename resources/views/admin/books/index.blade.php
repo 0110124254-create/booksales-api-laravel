@@ -6,12 +6,12 @@
     <section class="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
         <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
-                <a href="{{ route('admin.dashboard') }}" class="text-sm font-bold text-emerald-800 hover:text-emerald-700">← Dashboard</a>
-                <p class="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-emerald-800">Area administrator</p>
+                <a href="{{ route('admin.dashboard') }}" class="text-sm font-bold text-violet-800 hover:text-violet-700">← Dashboard</a>
+                <p class="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-violet-800">Area administrator</p>
                 <h1 class="mt-2 text-4xl font-black tracking-tight text-stone-950">Kelola buku</h1>
                 <p class="mt-3 text-sm leading-6 text-stone-600">Tambah, perbarui, atau hapus buku dari katalog Ruang Baca.</p>
             </div>
-            <a href="{{ route('admin.web-books.create') }}" class="inline-flex w-fit items-center gap-2 rounded-full bg-emerald-950 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800">
+            <a href="{{ route('admin.web-books.create') }}" class="inline-flex w-fit items-center gap-2 rounded-full bg-violet-950 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-violet-800">
                 <span aria-hidden="true">+</span> Tambah buku
             </a>
         </div>
@@ -21,7 +21,7 @@
                 <div class="px-6 py-16 text-center">
                     <p class="text-lg font-bold text-stone-900">Belum ada buku di katalog.</p>
                     <p class="mt-2 text-sm text-stone-600">Tambahkan buku pertama untuk mulai mengisi koleksi.</p>
-                    <a href="{{ route('admin.web-books.create') }}" class="mt-5 inline-flex rounded-full bg-emerald-950 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-800">Tambah buku</a>
+                    <a href="{{ route('admin.web-books.create') }}" class="mt-5 inline-flex rounded-full bg-violet-950 px-5 py-3 text-sm font-bold text-white hover:bg-violet-800">Tambah buku</a>
                 </div>
             @else
                 <div class="overflow-x-auto">
@@ -41,6 +41,7 @@
                                     <td class="px-6 py-4">
                                         <p class="font-bold text-stone-950">{{ $book->title }}</p>
                                         <p class="mt-1 text-xs text-stone-500">Oleh {{ $book->authorRecord?->name ?? $book->author }}</p>
+                                        @if ($book->isbn)<p class="mt-1 text-xs text-stone-400">ISBN {{ $book->isbn }}</p>@endif
                                     </td>
                                     <td class="px-6 py-4 text-stone-600">{{ $book->genre }}</td>
                                     <td class="px-6 py-4">
@@ -48,13 +49,13 @@
                                         <p class="mt-1 text-xs text-stone-500">{{ $book->stock }} tersedia</p>
                                     </td>
                                     <td class="px-6 py-4">
-                                        <span @class(['rounded-full px-3 py-1 text-xs font-bold', 'bg-emerald-50 text-emerald-800' => $book->is_active, 'bg-stone-100 text-stone-600' => ! $book->is_active])>
+                                        <span @class(['rounded-full px-3 py-1 text-xs font-bold', 'bg-violet-50 text-violet-800' => $book->is_active, 'bg-stone-100 text-stone-600' => ! $book->is_active])>
                                             {{ $book->is_active ? 'Aktif' : 'Nonaktif' }}
                                         </span>
                                     </td>
                                     <td class="px-6 py-4">
                                         <div class="flex items-center justify-end gap-2">
-                                            <a href="{{ route('admin.web-books.edit', $book) }}" class="rounded-full border border-stone-200 px-4 py-2 text-xs font-bold text-stone-700 transition hover:border-emerald-700 hover:text-emerald-900">Edit</a>
+                                            <a href="{{ route('admin.web-books.edit', $book) }}" class="rounded-full border border-stone-200 px-4 py-2 text-xs font-bold text-stone-700 transition hover:border-violet-700 hover:text-violet-900">Edit</a>
                                             <form method="POST" action="{{ route('admin.web-books.destroy', $book) }}" onsubmit="return confirm('Hapus buku ini dari katalog?')">
                                                 @csrf
                                                 @method('DELETE')

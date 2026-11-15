@@ -15,8 +15,21 @@ class GenreController extends Controller
 {
     public function webIndex(): View
     {
+        $bookCounts = Book::query()
+            ->where('is_active', true)
+            ->selectRaw('genre, COUNT(*) AS books_count')
+            ->groupBy('genre')
+            ->pluck('books_count', 'genre');
+
         return view('genres.index', [
-            'genres' => Genre::catalogData(),
+            'books' => Book::query()->where('is_active', true)->orderByDesc('created_at')->orderByDesc('id')->take(5)->get(),
+            'genres' => array_map(
+                static fn (array $genre): array => [
+                    ...$genre,
+                    'books_count' => (int) ($bookCounts[$genre['name']] ?? 0),
+                ],
+                Genre::catalogData(),
+            ),
         ]);
     }
 

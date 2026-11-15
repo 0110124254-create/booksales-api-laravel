@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\GenreController;
+use App\Http\Controllers\MidtransNotificationController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SaleController;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::get('/', [BookController::class, 'index'])->name('api.root');
+Route::post('/midtrans/notification', MidtransNotificationController::class)->name('midtrans.notification');
 
 Route::apiResource('books', BookController::class)->only(['index', 'show']);
 Route::apiResource('books', BookController::class)
@@ -32,6 +34,7 @@ Route::apiResource('authors', AuthorController::class)
 
 Route::get('/login', [AuthController::class, 'create'])->name('api.login');
 Route::post('/login', [AuthController::class, 'store'])->middleware('throttle:5,1')->name('api.login.store');
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1')->name('api.register');
 Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth:sanctum')->name('api.logout');
 
 Route::middleware(['auth:sanctum', 'can:access-customer'])->group(function () {
@@ -45,10 +48,13 @@ Route::middleware(['auth:sanctum', 'can:access-customer'])->group(function () {
     Route::match(['put', 'patch'], '/sales/{reference}', [SaleController::class, 'update'])
         ->name('sales.update');
 
-    Route::get('/orders/{reference}', [SaleController::class, 'show'])->name('sales.show');
     Route::match(['put', 'patch'], '/orders/{reference}', [SaleController::class, 'update'])
         ->name('sales.order.update');
 });
+
+Route::get('/orders/{reference}', [SaleController::class, 'show'])
+    ->middleware(['auth:sanctum', 'can:access-customer'])
+    ->name('sales.show');
 
 Route::middleware(['auth:sanctum', 'can:access-admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::apiResource('books', BookController::class)->except('show');

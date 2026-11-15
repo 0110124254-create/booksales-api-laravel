@@ -17,6 +17,7 @@ class AuthorController extends Controller
     {
         return view('authors.index', [
             'authors' => Author::catalogData(),
+            'books' => Book::query()->where('is_active', true)->orderByDesc('created_at')->orderByDesc('id')->take(5)->get(),
         ]);
     }
 

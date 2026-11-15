@@ -28,7 +28,9 @@ class Author extends Model
     public static function catalogData(): array
     {
         return static::query()
-            ->withCount('books')
+            ->withCount([
+                'books' => static fn ($query) => $query->where('is_active', true),
+            ])
             ->orderBy('id')
             ->get()
             ->map(static fn (self $author): array => [

@@ -1,0 +1,7 @@
+@extends('layouts.catalog')
+@section('title', 'Pesanan User')
+@section('content')
+<section class="mx-auto max-w-7xl px-5 py-12 sm:px-8"><p class="text-xs font-bold uppercase tracking-wider text-violet-800">Admin</p><h1 class="mt-2 text-4xl font-black">Pesanan user</h1>
+    <div class="mt-7 overflow-x-auto rounded-2xl border border-stone-200 bg-white"><table class="w-full text-left text-sm"><thead class="bg-stone-50"><tr><th class="p-4">Referensi</th><th class="p-4">Pembeli</th><th class="p-4">Total</th><th class="p-4">Pembayaran</th><th class="p-4">Pengiriman</th><th class="p-4"></th></tr></thead><tbody class="divide-y divide-stone-100">@forelse ($orders as $order)<tr><td class="p-4 font-bold">{{ $order->reference }}<p class="mt-1 font-normal text-stone-500">{{ $order->created_at->format('d/m/Y H:i') }}</p></td><td class="p-4">{{ $order->customer_name }}<p class="text-stone-500">{{ $order->customer_email }}</p></td><td class="p-4">Rp{{ number_format($order->total, 0, ',', '.') }}</td><td class="p-4">{{ ucfirst($order->payment_status) }}</td><td class="p-4">{{ ucfirst($order->fulfillment_status) }}</td><td class="p-4"><a href="{{ route('admin.sales.show', $order) }}" class="font-bold text-violet-900">Detail</a></td></tr>@empty<tr><td colspan="6" class="p-8 text-center text-stone-500">Belum ada pesanan.</td></tr>@endforelse</tbody></table></div><div class="mt-5">{{ $orders->links() }}</div>
+</section>
+@endsection

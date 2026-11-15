@@ -9,13 +9,17 @@
     <section class="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16">
         <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
             <div>
-                <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-800">Area administrator</p>
+                <p class="text-xs font-bold uppercase tracking-[0.2em] text-violet-800">Area administrator</p>
                 <h1 class="mt-3 text-4xl font-black tracking-tight text-stone-950 sm:text-5xl">Dashboard admin</h1>
                 <p class="mt-4 text-lg text-stone-600">Login sebagai <strong class="text-stone-950">{{ auth()->user()->name }}</strong> · {{ auth()->user()->email }}</p>
             </div>
             <div class="flex flex-wrap gap-3">
-                <a href="{{ route('admin.web-books.index') }}" class="w-fit rounded-full bg-emerald-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-800">Kelola buku</a>
-                <a href="{{ route('home') }}" class="w-fit rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-bold text-stone-800 hover:border-emerald-700 hover:text-emerald-900">Lihat katalog <span aria-hidden="true">→</span></a>
+                <a href="{{ route('admin.web-books.index') }}" class="w-fit rounded-full bg-violet-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-violet-800">Kelola buku</a>
+                <a href="{{ route('admin.web-genres.index') }}" class="w-fit rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-bold text-stone-800 hover:border-violet-700">Kelola kategori</a>
+                <a href="{{ route('admin.users.index') }}" class="w-fit rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-bold text-stone-800 hover:border-violet-700">Daftar user</a>
+                <a href="{{ route('admin.sales.index') }}" class="w-fit rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-bold text-stone-800 hover:border-violet-700">Pesanan</a>
+                <a href="{{ route('admin.contacts.index') }}" class="w-fit rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-bold text-stone-800 hover:border-violet-700">Pesan masuk ({{ $unreadMessageCount }})</a>
+                <a href="{{ route('home') }}" class="w-fit rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-bold text-stone-800 hover:border-violet-700 hover:text-violet-900">Lihat katalog <span aria-hidden="true">→</span></a>
             </div>
         </div>
 
@@ -24,12 +28,13 @@
                 ['label' => 'Total Buku', 'count' => $bookCount, 'icon' => 'B'],
                 ['label' => 'Total Genre', 'count' => $genreCount, 'icon' => 'G'],
                 ['label' => 'Total Penulis', 'count' => $authorCount, 'icon' => 'P'],
-                ['label' => 'Total Pesanan', 'count' => $saleCount, 'icon' => 'O'],
+            ['label' => 'Total Pesanan', 'count' => $saleCount, 'icon' => 'O'],
+            ['label' => 'User Terdaftar', 'count' => $userCount, 'icon' => 'U'],
             ] as $stat)
                 <article class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
                     <div class="flex items-center justify-between">
                         <p class="text-sm font-semibold text-stone-600">{{ $stat['label'] }}</p>
-                        <span class="flex size-10 items-center justify-center rounded-2xl bg-emerald-50 font-black text-emerald-900">{{ $stat['icon'] }}</span>
+                        <span class="flex size-10 items-center justify-center rounded-2xl bg-violet-50 font-black text-violet-900">{{ $stat['icon'] }}</span>
                     </div>
                     <p class="mt-5 text-4xl font-black tracking-tight text-stone-950">{{ $stat['count'] }}</p>
                 </article>
@@ -37,12 +42,12 @@
         </div>
 
         <div class="mt-8 grid gap-5 lg:grid-cols-2">
-            <article class="rounded-3xl bg-emerald-950 p-7 text-white sm:p-9">
-                <p class="text-xs font-bold uppercase tracking-[0.18em] text-emerald-200">Katalog API</p>
+            <article class="rounded-3xl bg-violet-950 p-7 text-white sm:p-9">
+                <p class="text-xs font-bold uppercase tracking-[0.18em] text-violet-200">Katalog API</p>
                 <h2 class="mt-3 text-2xl font-black">Data buku, genre, dan penulis</h2>
-                <p class="mt-3 max-w-lg text-sm leading-6 text-emerald-100">Aplikasi menyediakan halaman katalog untuk pengunjung serta API JSON untuk pengujian dan integrasi.</p>
+                <p class="mt-3 max-w-lg text-sm leading-6 text-violet-100">Aplikasi menyediakan halaman katalog untuk pengunjung serta API JSON untuk pengujian dan integrasi.</p>
                 <div class="mt-6 flex flex-wrap gap-3">
-                    <a href="{{ url('/api/books') }}" class="rounded-full bg-white px-4 py-2.5 text-sm font-bold text-emerald-950 hover:bg-emerald-50">API Buku</a>
+                    <a href="{{ url('/api/books') }}" class="rounded-full bg-white px-4 py-2.5 text-sm font-bold text-violet-950 hover:bg-violet-50">API Buku</a>
                     <a href="{{ url('/api/genres') }}" class="rounded-full bg-white/10 px-4 py-2.5 text-sm font-bold text-white hover:bg-white/20">API Genre</a>
                     <a href="{{ url('/api/authors') }}" class="rounded-full bg-white/10 px-4 py-2.5 text-sm font-bold text-white hover:bg-white/20">API Penulis</a>
                 </div>
