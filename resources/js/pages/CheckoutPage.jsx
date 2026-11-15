@@ -53,5 +53,5 @@ export default function CheckoutPage() {
 }
 
 function Field({ id, label, type = 'text', value, onChange }) {
-    return <div><label htmlFor={id} className="block text-sm font-bold">{label}</label><input id={id} type={type} required value={value} onChange={(event) => onChange({ ...value, [id]: event.target.value })} className="mt-2 w-full rounded-2xl border border-stone-300 bg-stone-50 px-4 py-3 outline-none focus:border-violet-700" /></div>;
+    return <div><label htmlFor={id} className="block text-sm font-bold">{label}</label><input id={id} type={type} required value={value} onChange={(event) => onChange((fields) => ({ ...fields, [id]: event.target.value }))} className="mt-2 w-full rounded-2xl border border-stone-300 bg-stone-50 px-4 py-3 outline-none focus:border-violet-700" /></div>;
 }
