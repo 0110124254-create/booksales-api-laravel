@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['title', 'author_id', 'genre_id', 'description', 'price', 'stock', 'is_active', 'isbn', 'cover'])]
+#[Fillable(['title', 'author_id', 'genre_id', 'description', 'price', 'stock', 'weight_gram', 'is_active', 'isbn', 'cover'])]
 class Book extends Model
 {
     /** @use HasFactory<BookFactory> */
@@ -21,6 +21,14 @@ class Book extends Model
     public function saleItems(): HasMany
     {
         return $this->hasMany(SaleItem::class);
+    }
+
+    /**
+     * @return HasMany<BookReview, $this>
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(BookReview::class);
     }
 
     /**
@@ -47,6 +55,7 @@ class Book extends Model
         return [
             'price' => 'integer',
             'stock' => 'integer',
+            'weight_gram' => 'integer',
             'is_active' => 'boolean',
             'author_id' => 'integer',
             'genre_id' => 'integer',

@@ -41,4 +41,10 @@ return [
         'is_production' => env('MIDTRANS_IS_PRODUCTION', false),
     ],
 
+    'rajaongkir' => [
+        'api_key' => env('RAJAONGKIR_API_KEY'),
+        'origin_id' => env('RAJAONGKIR_ORIGIN_ID'),
+        'couriers' => env('RAJAONGKIR_COURIERS', 'jne:sicepat:ide:sap:jnt:ninja:tiki:lion:anteraja:pos:ncs:rex:rpx:sentral:star:wahana:dse'),
+    ],
+
 ];

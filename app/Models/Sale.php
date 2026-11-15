@@ -19,13 +19,23 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'payment_status',
     'paid_at',
     'total',
+    'subtotal',
+    'shipping_cost',
     'shipping_address',
+    'shipping_destination_id',
+    'shipping_destination',
+    'shipping_courier',
+    'shipping_service',
+    'shipping_etd',
     'midtrans_token',
     'midtrans_redirect_url',
     'fulfillment_status',
 ])]
 class Sale extends Model
 {
+    /** @var array<int, string> */
+    protected $hidden = ['midtrans_token'];
+
     /** @use HasFactory<SaleFactory> */
     use HasFactory;
 
@@ -53,6 +63,9 @@ class Sale extends Model
         return [
             'paid_at' => 'datetime',
             'total' => 'integer',
+            'subtotal' => 'integer',
+            'shipping_cost' => 'integer',
+            'shipping_destination_id' => 'integer',
         ];
     }
 }

@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\Book;
 use App\Models\Sale;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -31,6 +33,14 @@ class MidtransSnap
             'quantity' => (int) $item->quantity,
             'name' => mb_substr($item->book_title, 0, 50),
         ])->all();
+        if ($sale->shipping_cost > 0) {
+            $items[] = [
+                'id' => 'shipping',
+                'price' => (int) $sale->shipping_cost,
+                'quantity' => 1,
+                'name' => mb_substr('Ongkir '.$sale->shipping_courier.' '.$sale->shipping_service, 0, 50),
+            ];
+        }
 
         try {
             $response = Http::acceptJson()
@@ -48,7 +58,7 @@ class MidtransSnap
                         'email' => $sale->customer_email,
                         'phone' => $sale->customer_phone,
                     ],
-                    'callbacks' => ['finish' => route('orders.show', $sale->reference)],
+                    'callbacks' => ['finish' => url('/orders/'.$sale->reference)],
                 ]);
         } catch (ConnectionException) {
             throw new RuntimeException('Tidak dapat terhubung ke Midtrans. Periksa koneksi internet/server lalu coba checkout kembali.');
@@ -89,7 +99,7 @@ class MidtransSnap
         $transactionStatus = (string) ($payload['transaction_status'] ?? '');
         $fraudStatus = (string) ($payload['fraud_status'] ?? '');
 
-        if ($transactionStatus === 'settlement' || ($transactionStatus === 'capture' && $fraudStatus === 'accept')) {
+        if ($statusCode === '200' && ($transactionStatus === 'settlement' || ($transactionStatus === 'capture' && $fraudStatus === 'accept'))) {
             Sale::query()->whereKey($sale->id)->where('payment_status', 'pending')->update([
                 'payment_status' => 'paid',
                 'paid_at' => now(),
@@ -104,7 +114,7 @@ class MidtransSnap
 
     private function cancelAndRestoreStock(Sale $sale): void
     {
-        \Illuminate\Support\Facades\DB::transaction(function () use ($sale): void {
+        DB::transaction(function () use ($sale): void {
             $lockedSale = Sale::with('items')->whereKey($sale->id)->lockForUpdate()->first();
             if ($lockedSale === null || $lockedSale->payment_status !== 'pending') {
                 return;
@@ -112,7 +122,7 @@ class MidtransSnap
 
             $lockedSale->update(['payment_status' => 'cancelled']);
             foreach ($lockedSale->items as $item) {
-                \App\Models\Book::query()->whereKey($item->book_id)->increment('stock', $item->quantity);
+                Book::query()->whereKey($item->book_id)->increment('stock', $item->quantity);
             }
         });
     }

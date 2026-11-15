@@ -1,0 +1,21 @@
+{
+  "id": "/",
+  "name": "Ruang Baca - Toko Buku",
+  "short_name": "Ruang Baca",
+  "description": "Jelajahi dan pesan buku pilihan di Ruang Baca.",
+  "lang": "id-ID",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#fbfaf8",
+  "theme_color": "#32194f",
+  "icons": [
+    {
+      "src": "/images/pwa/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

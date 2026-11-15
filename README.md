@@ -62,12 +62,34 @@ Registrasi dari SPA selalu membuat akun user; peran admin hanya berasal dari aku
 - **Admin:** ringkasan toko, CRUD buku dengan upload sampul, CRUD genre dan penulis, daftar pengguna, pengelolaan pesanan/status pemenuhan, konfirmasi pembayaran, serta kotak masuk pesan.
 - **API:** autentikasi Sanctum, katalog dan CRUD terproteksi, checkout/pesanan, kontak, dashboard, serta endpoint manajemen admin. Route admin memerlukan `auth:sanctum` dan `can:access-admin`; route pembeli memakai `can:access-customer`.
 - **Database:** relasi buku ke penulis dan genre memakai foreign key. Seeder menyediakan 5 genre, 5 penulis, 15 buku, dan 2 akun demo.
+- **Pembayaran:** checkout mendukung COD dan Midtrans Snap. Status pembayaran online hanya berubah setelah notifikasi Midtrans tervalidasi.
+- **Pengiriman:** RajaOngkir menghitung tarif kurir berdasarkan alamat tujuan dan berat buku yang dikelola admin.
+- **Ulasan:** pelanggan yang sudah melunasi pesanan bisa memberi satu ulasan terverifikasi untuk setiap buku yang dibeli.
+- **Mobile:** situs responsif dan dapat dipasang sebagai PWA dari browser Android/iOS. Ini bukan paket APK atau aplikasi native App Store.
 
-## Batasan yang diketahui
+## Konfigurasi pembayaran dan ongkir
 
-- Checkout SPA saat ini memakai **Bayar di tempat (COD)**. Pesanan dibuat dengan status pembayaran pending; admin mengonfirmasi pembayaran setelah menerima pembayaran, lalu memperbarui status pemenuhan.
-- Integrasi pembuatan pembayaran Midtrans Snap belum tersambung ke alur checkout. Endpoint notifikasi Midtrans dan layanan pendukung masih tersedia; pengembangan lanjutan perlu menghubungkan pembuatan transaksi, redirect pembayaran, dan uji sandbox end-to-end.
-- Token API disimpan di `localStorage` browser untuk demo SPA ini. Untuk penerapan publik, evaluasi autentikasi cookie Sanctum dan kebijakan keamanan deployment.
+Isi kredensial pada `.env` server (jangan commit atau bagikan nilainya):
+
+```dotenv
+MIDTRANS_SERVER_KEY=SB-Mid-server-...
+MIDTRANS_CLIENT_KEY=SB-Mid-client-...
+MIDTRANS_IS_PRODUCTION=false
+APP_URL=https://domain-aplikasi
+RAJAONGKIR_API_KEY=...
+RAJAONGKIR_ORIGIN_ID=...
+RAJAONGKIR_COURIERS=jne:jnt:sicepat:pos:tiki:anteraja:ninja:idexpress
+```
+
+Gunakan kunci sandbox saat pengembangan. Atur URL notifikasi pembayaran Midtrans pada dashboard ke `https://domain-aplikasi/api/midtrans/notification`; URL `localhost` tidak dapat menerima webhook dari Midtrans. Setelah konfigurasi server berubah, jalankan `php artisan config:clear`.
+
+Atur ID asal toko menggunakan ID tujuan/domestik RajaOngkir untuk alamat kecamatan asal. Checkout akan mencari kecamatan/kode pos tujuan, menghitung tarif, lalu memvalidasi ulang layanan dan harga di server sebelum pesanan dibuat. Buku baru memiliki berat bawaan 300 gram; admin dapat mengubah beratnya pada formulir buku.
+
+Untuk memasang di ponsel, deploy aplikasi ke HTTPS, buka situs lewat Chrome Android atau Safari iOS, lalu gunakan menu browser **Install app / Add to Home Screen**. PWA menyediakan tampilan terpasang dan cache shell dasar; transaksi, katalog, pembayaran, dan ongkir tetap membutuhkan koneksi internet.
+
+COD tetap tersedia sebagai alternatif. Pembayaran Midtrans dan tarif RajaOngkir membutuhkan kredensial merchant masing-masing.
+
+Token API disimpan di `localStorage` browser untuk demo SPA ini. Untuk penerapan publik, evaluasi autentikasi cookie Sanctum dan kebijakan keamanan deployment.
 
 ## Pengujian
 

@@ -1,17 +1,19 @@
 <?php
 
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\AdminContactController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminSaleController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\BookController;
+use App\Http\Controllers\BookReviewController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\GenreController;
 use App\Http\Controllers\MidtransNotificationController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SaleController;
+use App\Http\Controllers\ShippingController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -23,6 +25,7 @@ Route::get('/', [BookController::class, 'index'])->name('api.root');
 Route::post('/midtrans/notification', MidtransNotificationController::class)->name('midtrans.notification');
 
 Route::apiResource('books', BookController::class)->only(['index', 'show']);
+Route::get('/books/{book}/reviews', [BookReviewController::class, 'index'])->name('books.reviews.index');
 Route::apiResource('books', BookController::class)
     ->only(['store', 'update', 'destroy'])
     ->middleware(['auth:sanctum', 'can:access-admin']);
@@ -42,6 +45,10 @@ Route::post('/register', [AuthController::class, 'register'])->middleware('throt
 Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth:sanctum')->name('api.logout');
 
 Route::middleware(['auth:sanctum', 'can:access-customer'])->group(function () {
+    Route::get('/checkout/options', [ShippingController::class, 'options'])->name('checkout.options');
+    Route::get('/shipping/destinations', [ShippingController::class, 'destinations'])->middleware('throttle:20,1')->name('shipping.destinations');
+    Route::post('/shipping/quotes', [ShippingController::class, 'quotes'])->middleware('throttle:20,1')->name('shipping.quotes');
+    Route::post('/books/{book}/reviews', [BookReviewController::class, 'store'])->middleware('throttle:5,1')->name('books.reviews.store');
     Route::get('/my/orders', [SaleController::class, 'myIndex'])->name('sales.mine');
     Route::post('/sales', [SaleController::class, 'store'])
         ->middleware('throttle:10,1')

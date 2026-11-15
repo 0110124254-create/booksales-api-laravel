@@ -5,23 +5,38 @@ namespace App\Http\Controllers;
 use App\Models\Book;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Services\MidtransSnap;
+use App\Services\RajaOngkir;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class SaleController extends Controller
 {
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, MidtransSnap $midtrans, RajaOngkir $rajaOngkir): JsonResponse
     {
+        if (app()->environment('production') && ! $rajaOngkir->configured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Checkout belum aktif. Konfigurasikan API RajaOngkir dan ID asal toko terlebih dahulu.',
+            ], 503);
+        }
+
         $validator = Validator::make($request->all(), [
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_email' => ['nullable', 'email', 'max:255'],
             'customer_phone' => ['required', 'string', 'max:30'],
             'shipping_address' => ['required', 'string', 'max:2000'],
-            'payment_method' => ['required', 'in:cash'],
+            'payment_method' => ['required', 'in:cash,midtrans'],
+            'shipping_destination_id' => [$rajaOngkir->configured() ? 'required' : 'nullable', 'integer', 'min:1'],
+            'shipping_destination' => [$rajaOngkir->configured() ? 'required' : 'nullable', 'string', 'max:255'],
+            'shipping_courier' => [$rajaOngkir->configured() ? 'required' : 'nullable', 'string', 'max:50'],
+            'shipping_service' => [$rajaOngkir->configured() ? 'required' : 'nullable', 'string', 'max:100'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.book_id' => ['required', 'integer', 'distinct', 'exists:books,id'],
             'items.*.quantity' => ['required', 'integer', 'min:0', 'max:1000'],
@@ -41,8 +56,52 @@ class SaleController extends Controller
             ]);
         }
 
+        if ($data['payment_method'] === 'midtrans' && ! $midtrans->configured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pembayaran online belum aktif. Isi MIDTRANS_SERVER_KEY pada konfigurasi server.',
+            ], 503);
+        }
+
+        $shipping = [
+            'shipping_destination_id' => null,
+            'shipping_destination' => null,
+            'shipping_courier' => null,
+            'shipping_service' => null,
+            'shipping_etd' => null,
+            'shipping_cost' => 0,
+        ];
+
+        if ($rajaOngkir->configured()) {
+            try {
+                $quotes = $rajaOngkir->quotes((int) $data['shipping_destination_id'], $requestedItems->all());
+            } catch (RuntimeException|ConnectionException $exception) {
+                return response()->json(['success' => false, 'message' => $exception->getMessage()], 503);
+            }
+
+            $selectedQuote = collect($quotes)->first(fn (array $quote): bool => strcasecmp($quote['code'], $data['shipping_courier']) === 0
+                && $quote['service'] === $data['shipping_service']
+            );
+
+            if ($selectedQuote === null) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pilihan kurir tidak tersedia lagi. Hitung ulang ongkos kirim sebelum memesan.',
+                ], 422);
+            }
+
+            $shipping = [
+                'shipping_destination_id' => (int) $data['shipping_destination_id'],
+                'shipping_destination' => $data['shipping_destination'],
+                'shipping_courier' => $selectedQuote['name'],
+                'shipping_service' => $selectedQuote['service'],
+                'shipping_etd' => $selectedQuote['etd'],
+                'shipping_cost' => $selectedQuote['cost'],
+            ];
+        }
+
         try {
-            $sale = DB::transaction(function () use ($request, $data, $requestedItems): Sale {
+            $sale = DB::transaction(function () use ($request, $data, $requestedItems, $shipping): Sale {
                 $sale = Sale::create([
                     'reference' => 'BOOK-'.Str::upper(Str::random(12)),
                     'user_id' => $request->user()->id,
@@ -53,8 +112,10 @@ class SaleController extends Controller
                     'payment_method' => $data['payment_method'],
                     'payment_status' => 'pending',
                     'total' => 0,
+                    'subtotal' => 0,
+                    ...$shipping,
                 ]);
-                $total = 0;
+                $subtotal = 0;
 
                 foreach ($requestedItems as $item) {
                     $book = Book::query()
@@ -87,10 +148,13 @@ class SaleController extends Controller
                         'quantity' => $quantity,
                         'unit_price' => $book->price,
                     ]);
-                    $total += $book->price * $quantity;
+                    $subtotal += $book->price * $quantity;
                 }
 
-                $sale->update(['total' => $total]);
+                $sale->update([
+                    'subtotal' => $subtotal,
+                    'total' => $subtotal + $shipping['shipping_cost'],
+                ]);
 
                 return $sale->load('items');
             });
@@ -98,10 +162,29 @@ class SaleController extends Controller
             return $this->validationError($exception->errors());
         }
 
+        $paymentRedirectUrl = null;
+        if ($sale->payment_method === 'midtrans') {
+            try {
+                $payment = $midtrans->createTransaction($sale);
+                $sale->update([
+                    'midtrans_token' => $payment['token'],
+                    'midtrans_redirect_url' => $payment['redirect_url'],
+                ]);
+                $paymentRedirectUrl = $payment['redirect_url'];
+            } catch (RuntimeException $exception) {
+                $this->cancelPendingAndRestoreStock($sale);
+
+                return response()->json(['success' => false, 'message' => $exception->getMessage()], 503);
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Resource created successfully',
-            'data' => $sale,
+            'data' => [
+                ...$sale->fresh()->load('items')->toArray(),
+                'payment_redirect_url' => $paymentRedirectUrl,
+            ],
         ], 201);
     }
 
@@ -140,6 +223,14 @@ class SaleController extends Controller
 
         if ($sale === null) {
             return $this->notFound();
+        }
+
+        if ($sale->payment_method === 'midtrans') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pesanan dengan pembayaran Midtrans tidak dapat diubah setelah transaksi pembayaran dibuat.',
+                'data' => null,
+            ], 409);
         }
 
         $validator = Validator::make($request->all(), [
@@ -181,7 +272,8 @@ class SaleController extends Controller
                 }
 
                 if ($items !== null) {
-                    $data['total'] = $this->replaceItems($sale, $items);
+                    $data['subtotal'] = $this->replaceItems($sale, $items);
+                    $data['total'] = $data['subtotal'] + $sale->shipping_cost;
                 }
 
                 $sale->update($data);
@@ -225,6 +317,14 @@ class SaleController extends Controller
             return $this->notFound();
         }
 
+        if ($sale->payment_method === 'midtrans' && $sale->payment_status === 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Batalkan transaksi Midtrans dari dashboard merchant sebelum menghapus pesanan.',
+                'data' => null,
+            ], 409);
+        }
+
         DB::transaction(function () use ($sale): void {
             $sale = Sale::with('items')
                 ->whereKey($sale->id)
@@ -253,6 +353,14 @@ class SaleController extends Controller
 
         if ($sale === null) {
             return $this->notFound();
+        }
+
+        if ($sale->payment_method === 'midtrans') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Status pembayaran Midtrans diperbarui otomatis melalui notifikasi terverifikasi.',
+                'data' => null,
+            ], 409);
         }
 
         $updated = Sale::query()
@@ -285,6 +393,14 @@ class SaleController extends Controller
 
         if ($sale === null) {
             return $this->notFound();
+        }
+
+        if ($sale->payment_method === 'midtrans' && $sale->payment_status === 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Batalkan transaksi Midtrans dari dashboard merchant agar status pembayaran tetap sinkron.',
+                'data' => null,
+            ], 409);
         }
 
         $cancelled = DB::transaction(function () use ($sale): bool {
@@ -404,5 +520,20 @@ class SaleController extends Controller
             'message' => 'Resource not found',
             'data' => null,
         ], 404);
+    }
+
+    private function cancelPendingAndRestoreStock(Sale $sale): void
+    {
+        DB::transaction(function () use ($sale): void {
+            $lockedSale = Sale::with('items')->whereKey($sale->id)->lockForUpdate()->first();
+            if ($lockedSale === null || $lockedSale->payment_status !== 'pending') {
+                return;
+            }
+
+            $lockedSale->update(['payment_status' => 'cancelled']);
+            foreach ($lockedSale->items as $item) {
+                Book::query()->whereKey($item->book_id)->increment('stock', $item->quantity);
+            }
+        });
     }
 }

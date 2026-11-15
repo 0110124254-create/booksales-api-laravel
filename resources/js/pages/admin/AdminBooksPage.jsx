@@ -3,7 +3,7 @@ import AdminNav from '../../components/AdminNav';
 import { Notice, PageTitle } from '../../components/Notice';
 import api, { errorMessage } from '../../services/api';
 
-const empty = { title: '', author_id: '', genre_id: '', isbn: '', description: '', price: '', stock: '', is_active: true, cover_upload: null };
+const empty = { title: '', author_id: '', genre_id: '', isbn: '', description: '', price: '', stock: '', weight_gram: '300', is_active: true, cover_upload: null };
 
 export default function AdminBooksPage() {
     const [books, setBooks] = useState([]);
@@ -32,6 +32,7 @@ export default function AdminBooksPage() {
             description: book.description ?? '',
             price: String(book.price),
             stock: String(book.stock),
+            weight_gram: String(book.weight_gram ?? 300),
             is_active: Boolean(book.is_active),
             cover_upload: null,
         } : empty);
@@ -76,6 +77,7 @@ export default function AdminBooksPage() {
                 <Input id="isbn" label="ISBN" value={fields.isbn} onChange={setFields} required={false} />
                 <Input id="price" label="Harga (rupiah)" type="number" min="0" value={fields.price} onChange={setFields} />
                 <Input id="stock" label="Stok" type="number" min="0" value={fields.stock} onChange={setFields} />
+                <Input id="weight_gram" label="Berat buku (gram)" type="number" min="1" value={fields.weight_gram} onChange={setFields} />
                 <div><label htmlFor="cover_upload" className="block text-sm font-bold">Sampul buku</label><input id="cover_upload" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setFields({ ...fields, cover_upload: event.target.files?.[0] ?? null })} className="mt-2 w-full rounded-xl border border-stone-300 p-2 text-sm" /></div>
                 <label className="flex items-center gap-3 self-end pb-3 text-sm font-bold"><input type="checkbox" checked={fields.is_active} onChange={(event) => setFields({ ...fields, is_active: event.target.checked })} /> Tampilkan di katalog</label>
                 <div className="sm:col-span-2"><label htmlFor="description" className="block text-sm font-bold">Deskripsi</label><textarea id="description" rows="3" value={fields.description} onChange={(event) => setFields({ ...fields, description: event.target.value })} className="mt-2 w-full rounded-xl border border-stone-300 px-4 py-3" /></div>

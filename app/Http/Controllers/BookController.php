@@ -7,8 +7,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class BookController extends Controller
@@ -70,6 +70,7 @@ class BookController extends Controller
         }
 
         $data = $this->bookData($validator->validated());
+        $data['weight_gram'] ??= 300;
         if ($request->hasFile('cover_upload')) {
             $data['cover'] = $this->storeCover($request->file('cover_upload'));
         }
@@ -162,6 +163,7 @@ class BookController extends Controller
             'description' => [$partial ? 'sometimes' : 'nullable', 'nullable', 'string'],
             'price' => [$partial ? 'sometimes' : 'required', 'integer', 'min:0'],
             'stock' => [$partial ? 'sometimes' : 'required', 'integer', 'min:0'],
+            'weight_gram' => ['sometimes', 'integer', 'min:1', 'max:100000'],
             'is_active' => ['sometimes', 'boolean'],
             'isbn' => ['nullable', 'string', 'max:20', Rule::unique('books', 'isbn')->ignore($book?->id)],
             'cover_upload' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
