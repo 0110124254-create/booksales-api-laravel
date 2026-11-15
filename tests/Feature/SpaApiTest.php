@@ -1,0 +1,98 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Author;
+use App\Models\Book;
+use App\Models\ContactMessage;
+use App\Models\Genre;
+use App\Models\Sale;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
+
+class SpaApiTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_book_api_searches_by_title_author_and_isbn_and_returns_pagination_metadata(): void
+    {
+        $author = Author::factory()->create(['name' => 'Penulis Pencarian']);
+        $genre = Genre::query()->firstOrFail();
+        Book::factory()->create([
+            'title' => 'Judul Unik',
+            'author_id' => $author->id,
+            'author' => $author->name,
+            'genre_id' => $genre->id,
+            'genre' => $genre->name,
+            'isbn' => '111-UNIK',
+        ]);
+        Book::factory()->create(['title' => 'Buku Tidak Cocok']);
+
+        $this->getJson('/api/books?q=Penulis%20Pencarian&per_page=1')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('meta.current_page', 1)
+            ->assertJsonPath('data.0.title', 'Judul Unik')
+            ->assertJsonPath('data.0.author_record.name', 'Penulis Pencarian');
+
+        $this->getJson('/api/books?q=111-UNIK')->assertJsonPath('meta.total', 1);
+    }
+
+    public function test_customer_order_history_only_contains_the_authenticated_users_orders(): void
+    {
+        $customer = User::factory()->create();
+        $book = Book::factory()->create(['stock' => 4]);
+        Sanctum::actingAs($customer);
+        $created = $this->postJson('/api/checkout', [
+            'customer_name' => 'Pelanggan Uji',
+            'customer_phone' => '08123456789',
+            'shipping_address' => 'Jl. Contoh No. 5, Jakarta',
+            'payment_method' => 'cash',
+            'items' => [['book_id' => $book->id, 'quantity' => 1]],
+        ])->assertCreated();
+
+        $this->getJson('/api/my/orders')
+            ->assertOk()
+            ->assertJsonPath('data.data.0.reference', $created->json('data.reference'));
+
+        Sanctum::actingAs(User::factory()->create());
+        $this->getJson('/api/my/orders')->assertJsonPath('data.total', 0);
+    }
+
+    public function test_customer_can_send_contact_message_and_admin_can_mark_it_read(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+        $created = $this->postJson('/api/contact', [
+            'name' => 'Pengguna Uji',
+            'email' => 'user@example.test',
+            'subject' => 'Pertanyaan buku',
+            'message' => 'Mohon informasi ketersediaan buku ini.',
+        ])->assertCreated();
+        $message = ContactMessage::query()->findOrFail($created->json('data.id'));
+
+        $this->getJson('/api/admin/messages')->assertForbidden();
+        Sanctum::actingAs(User::factory()->create(['is_admin' => true]));
+        $this->getJson('/api/admin/messages')->assertOk()->assertJsonFragment(['subject' => 'Pertanyaan buku']);
+        $updated = $this->patchJson("/api/admin/messages/{$message->id}")->assertOk();
+        $this->assertNotNull($updated->json('data.read_at'));
+    }
+
+    public function test_admin_dashboard_and_management_api_reject_non_admin_users(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+        $this->getJson('/api/admin/dashboard')->assertForbidden();
+        $this->getJson('/api/admin/users')->assertForbidden();
+        $this->getJson('/api/admin/sales')->assertForbidden();
+        $this->getJson('/api/admin/books')->assertForbidden();
+
+        Sanctum::actingAs(User::factory()->create(['is_admin' => true]));
+        $this->getJson('/api/admin/dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.book_count', 0)
+            ->assertJsonPath('data.user_count', 1);
+        $this->getJson('/api/admin/users')->assertOk();
+        $this->getJson('/api/admin/sales')->assertOk();
+    }
+}

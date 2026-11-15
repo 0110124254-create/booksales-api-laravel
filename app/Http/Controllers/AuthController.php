@@ -132,7 +132,7 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'Authenticated successfully',
             'data' => [
-                'user' => $user->only(['id', 'name', 'username', 'email']),
+                'user' => $user->only(['id', 'name', 'username', 'email', 'is_admin']),
                 'token' => $token,
             ],
         ]);
@@ -189,6 +189,7 @@ class AuthController extends Controller
                     'name' => $user->name,
                     'username' => $user->username,
                     'email' => $user->email,
+                    'is_admin' => $user->is_admin,
                 ],
                 'token' => $token,
             ],

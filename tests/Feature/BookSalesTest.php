@@ -56,6 +56,7 @@ class BookSalesTest extends TestCase
             'customer_name' => 'Pelanggan Contoh',
             'customer_email' => 'pelanggan@example.test',
             'customer_phone' => '08123456789',
+            'shipping_address' => 'Jl. Contoh No. 10, Jakarta',
             'payment_method' => 'bank_transfer',
             'items' => [
                 ['book_id' => $book->id, 'quantity' => 2],
@@ -89,6 +90,7 @@ class BookSalesTest extends TestCase
         $this->postJson('/api/checkout', [
             'customer_name' => 'Pelanggan Contoh',
             'customer_phone' => '08123456789',
+            'shipping_address' => 'Jl. Contoh No. 10, Jakarta',
             'payment_method' => 'cash',
             'items' => [
                 ['book_id' => $firstBook->id, 'quantity' => 2],
@@ -204,6 +206,7 @@ class BookSalesTest extends TestCase
         $paidResponse = $this->postJson('/api/checkout', [
             'customer_name' => 'Pelanggan Contoh',
             'customer_phone' => '08123456789',
+            'shipping_address' => 'Jl. Contoh No. 10, Jakarta',
             'payment_method' => 'cash',
             'items' => [['book_id' => $book->id, 'quantity' => 2]],
         ])->assertCreated();
@@ -220,6 +223,7 @@ class BookSalesTest extends TestCase
         $cancelResponse = $this->postJson('/api/checkout', [
             'customer_name' => 'Pelanggan Kedua',
             'customer_phone' => '08123456789',
+            'shipping_address' => 'Jl. Contoh No. 10, Jakarta',
             'payment_method' => 'bank_transfer',
             'items' => [['book_id' => $book->id, 'quantity' => 1]],
         ])->assertCreated();
@@ -248,6 +252,7 @@ class BookSalesTest extends TestCase
         $this->postJson('/api/checkout', [
             'customer_name' => 'Pelanggan Contoh',
             'customer_phone' => '08123456789',
+            'shipping_address' => 'Jl. Contoh No. 10, Jakarta',
             'payment_method' => 'cash',
             'items' => [['book_id' => $book->id, 'quantity' => 1]],
         ])->assertUnprocessable()
@@ -293,6 +298,7 @@ class BookSalesTest extends TestCase
         $payload = [
             'customer_name' => 'Pelanggan',
             'customer_phone' => '08123456789',
+            'shipping_address' => 'Jl. Contoh No. 10, Jakarta',
             'payment_method' => 'cash',
             'items' => [['book_id' => Book::factory()->create()->id, 'quantity' => 1]],
         ];
@@ -339,6 +345,7 @@ class BookSalesTest extends TestCase
         $created = $this->postJson('/api/sales', [
             'customer_name' => 'Pelanggan Contoh',
             'customer_phone' => '08123456789',
+            'shipping_address' => 'Jl. Contoh No. 10, Jakarta',
             'payment_method' => 'cash',
             'items' => [['book_id' => $book->id, 'quantity' => 2]],
         ])->assertCreated()
@@ -392,6 +399,7 @@ class BookSalesTest extends TestCase
         $response = $this->postJson('/api/sales', [
             'customer_name' => 'Pelanggan Contoh',
             'customer_phone' => '08123456789',
+            'shipping_address' => 'Jl. Contoh No. 10, Jakarta',
             'payment_method' => 'cash',
             'items' => [['book_id' => $book->id, 'quantity' => 2]],
         ])->assertCreated();

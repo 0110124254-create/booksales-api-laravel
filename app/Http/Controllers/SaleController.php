@@ -20,6 +20,7 @@ class SaleController extends Controller
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_email' => ['nullable', 'email', 'max:255'],
             'customer_phone' => ['required', 'string', 'max:30'],
+            'shipping_address' => ['required', 'string', 'max:2000'],
             'payment_method' => ['required', 'in:cash,bank_transfer'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.book_id' => ['required', 'integer', 'distinct', 'exists:books,id'],
@@ -48,6 +49,7 @@ class SaleController extends Controller
                     'customer_name' => $data['customer_name'],
                     'customer_email' => $data['customer_email'] ?? null,
                     'customer_phone' => $data['customer_phone'],
+                    'shipping_address' => $data['shipping_address'],
                     'payment_method' => $data['payment_method'],
                     'payment_status' => 'pending',
                     'total' => 0,
@@ -118,6 +120,14 @@ class SaleController extends Controller
             'success' => true,
             'message' => 'Resource retrieved successfully',
             'data' => $sale,
+        ]);
+    }
+
+    public function myIndex(Request $request): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $request->user()->sales()->with('items')->latest()->paginate(10),
         ]);
     }
 

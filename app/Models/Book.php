@@ -28,7 +28,7 @@ class Book extends Model
      */
     public function authorRecord(): BelongsTo
     {
-        return $this->belongsTo(Author::class);
+        return $this->belongsTo(Author::class, 'author_id');
     }
 
     /**
@@ -36,7 +36,7 @@ class Book extends Model
      */
     public function genreRecord(): BelongsTo
     {
-        return $this->belongsTo(Genre::class);
+        return $this->belongsTo(Genre::class, 'genre_id');
     }
 
     /**

@@ -12,6 +12,16 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class BookFactory extends Factory
 {
+    public function configure(): static
+    {
+        return $this->afterMaking(function (Book $book): void {
+            $genreId = Genre::query()->where('name', $book->genre)->value('id');
+            if ($genreId !== null) {
+                $book->genre_id = $genreId;
+            }
+        });
+    }
+
     /**
      * Define the model's default state.
      *

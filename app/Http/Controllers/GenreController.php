@@ -38,7 +38,7 @@ class GenreController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Get All Resource',
-            'data' => Genre::all(),
+            'data' => Genre::query()->withCount('books')->orderBy('name')->get(),
         ]);
     }
 
@@ -55,7 +55,7 @@ class GenreController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Resource created successfully',
-            'data' => $genre,
+            'data' => $genre->loadCount('books'),
         ], 201);
     }
 
@@ -94,7 +94,7 @@ class GenreController extends Controller
         $data = $validator->validated();
         DB::transaction(function () use ($genre, $data): void {
             if (isset($data['name']) && $genre->name !== $data['name']) {
-                Book::query()->where('genre', $genre->name)->update(['genre' => $data['name']]);
+                Book::query()->where('genre_id', $genre->id)->update(['genre' => $data['name']]);
             }
 
             $genre->update($data);
@@ -115,7 +115,7 @@ class GenreController extends Controller
             return $this->notFound();
         }
 
-        if (Book::query()->where('genre', $genre->name)->exists()) {
+        if (Book::query()->where('genre_id', $genre->id)->exists()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Genres assigned to books cannot be deleted',
