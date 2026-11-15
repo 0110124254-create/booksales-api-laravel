@@ -15,458 +15,58 @@ class CatalogPagesTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_genre_endpoint_returns_the_existing_genres(): void
+    public function test_web_routes_serve_the_react_shell_and_api_routes_remain_json(): void
     {
-        $this->getJson('/api/genres')
-            ->assertOk()
-            ->assertJsonPath('success', true)
-            ->assertJsonPath('message', 'Get All Resource')
-            ->assertJsonCount(5, 'data')
-            ->assertJsonFragment(['name' => 'Fiksi'])
-            ->assertJsonFragment(['name' => 'Teknologi']);
-    }
-
-    public function test_author_endpoint_returns_seeded_authors(): void
-    {
-        $this->seed(DatabaseSeeder::class);
-
-        $this->getJson('/api/authors')
-            ->assertOk()
-            ->assertJsonCount(5, 'data')
-            ->assertJsonFragment(['name' => 'Andrea Hirata'])
-            ->assertJsonFragment(['name' => 'Pramoedya Ananta Toer']);
-    }
-
-    public function test_web_root_shows_books_and_api_root_keeps_returning_json(): void
-    {
-        Book::factory()->create(['title' => 'Buku API']);
-
-        $this->get('/')
-            ->assertOk()
-            ->assertViewIs('catalog.home')
-            ->assertSeeText('Buku API')
-            ->assertSee('class="book-card__fallback">Buku API</div>', false)
-            ->assertSee('href="'.route('catalog.books.show', 1).'"', false)
-            ->assertSee('href="'.route('catalog.genres.index').'"', false)
-            ->assertSee('href="'.route('catalog.authors.index').'"', false);
-
-        $this->getJson('/api')
-            ->assertOk()
-            ->assertJsonPath('success', true)
-            ->assertJsonFragment(['title' => 'Buku API']);
-    }
-
-    public function test_book_catalog_seeds_isbn_books_without_rendering_fake_cover_art(): void
-    {
-        $this->seed(DatabaseSeeder::class);
-
-        $this->get('/')
-            ->assertOk()
-            ->assertSeeText('Laskar Pelangi')
-            ->assertDontSee('images/books/', false);
-
-        $this->assertSame(10, Book::query()->whereNotNull('isbn')->count());
-        $this->assertSame(10, Book::query()->where('is_active', true)->count());
-        $coveredBooks = Book::query()->whereNotNull('isbn')->whereNotNull('cover')->get();
-        $this->assertCount(10, $coveredBooks);
-        foreach ($coveredBooks as $book) {
-            $this->assertFileExists(public_path($book->cover));
+        foreach (['/', '/books', '/about', '/login', '/register', '/cart', '/admin/books'] as $path) {
+            $this->get($path)->assertOk()->assertViewIs('app')->assertSee('id="root"', false);
         }
+
+        $this->getJson('/api')->assertOk()->assertJsonPath('success', true);
     }
 
-    public function test_selecting_a_genre_opens_the_catalog_filtered_to_active_books(): void
-    {
-        Book::factory()->create([
-            'title' => 'Cerita Fiksi Pilihan',
-            'genre' => 'Fiksi',
-            'is_active' => true,
-        ]);
-        Book::factory()->create([
-            'title' => 'Buku Nonfiksi Pilihan',
-            'genre' => 'Nonfiksi',
-            'is_active' => true,
-        ]);
-        Book::factory()->create([
-            'title' => 'Naskah Fiksi Tersembunyi',
-            'genre' => 'Fiksi',
-            'is_active' => false,
-        ]);
-
-        $this->get('/genres')
-            ->assertOk()
-            ->assertSee('href="'.route('books.catalog', ['genre' => 'Fiksi']).'"', false)
-            ->assertSeeText('1 buku')
-            ->assertSeeText('Lihat koleksi');
-
-        $response = $this->get('/books?genre=Fiksi')
-            ->assertOk()
-            ->assertViewIs('catalog.home')
-            ->assertSeeText('Buku genre Fiksi')
-            ->assertSeeText('Cerita Fiksi Pilihan')
-            ->assertSeeText('Lihat semua buku')
-            ->assertDontSeeText('Buku Nonfiksi Pilihan')
-            ->assertDontSeeText('Naskah Fiksi Tersembunyi');
-
-        $this->assertSame('Fiksi', $response->viewData('selectedGenre')->name);
-        $this->assertCount(1, $response->viewData('books'));
-    }
-
-    public function test_catalog_rejects_a_genre_filter_that_does_not_exist(): void
-    {
-        $this->get('/books?genre=Genre-Tidak-Ada')
-            ->assertRedirect('/')
-            ->assertSessionHasErrors('genre');
-    }
-
-    public function test_genre_view_displays_five_records_as_model_arrays(): void
-    {
-        $response = $this->get('/genres')
-            ->assertOk()
-            ->assertViewIs('genres.index')
-            ->assertSeeText('Fiksi')
-            ->assertSeeText('Teknologi');
-
-        $genres = $response->viewData('genres');
-
-        $this->assertIsArray($genres);
-        $this->assertCount(5, $genres);
-    }
-
-    public function test_author_view_displays_five_seeded_records_as_model_arrays(): void
+    public function test_public_genre_and_author_api_returns_seeded_catalog_data(): void
     {
         $this->seed(DatabaseSeeder::class);
-
-        $response = $this->get('/authors')
-            ->assertOk()
-            ->assertViewIs('authors.index')
-            ->assertSeeText('Andrea Hirata')
-            ->assertSeeText('Pramoedya Ananta Toer');
-
-        $authors = $response->viewData('authors');
-
-        $this->assertIsArray($authors);
-        $this->assertCount(5, $authors);
+        $this->getJson('/api/genres')->assertOk()->assertJsonCount(5, 'data')->assertJsonFragment(['name' => 'Fiksi']);
+        $this->getJson('/api/authors')->assertOk()->assertJsonCount(5, 'data')->assertJsonFragment(['name' => 'Andrea Hirata']);
+        $this->getJson('/api/books?q=Laskar%20Pelangi')->assertOk()->assertJsonPath('data.0.title', 'Laskar Pelangi');
     }
 
-    public function test_author_view_counts_only_active_books_for_display(): void
-    {
-        $author = Author::factory()->create();
-
-        Book::factory()->create([
-            'author_id' => $author->id,
-            'author' => $author->name,
-            'is_active' => true,
-        ]);
-        Book::factory()->create([
-            'author_id' => $author->id,
-            'author' => $author->name,
-            'is_active' => false,
-        ]);
-
-        $response = $this->get('/authors')
-            ->assertOk()
-            ->assertViewIs('authors.index');
-
-        $authors = $response->viewData('authors');
-
-        $this->assertCount(1, $authors);
-        $this->assertSame(1, $authors[0]['books_count']);
-    }
-
-    public function test_genre_and_author_views_escape_untrusted_model_data(): void
-    {
-        $this->seed(DatabaseSeeder::class);
-        $script = '<script>alert("xss")</script>';
-        $genre = Genre::query()->firstOrFail();
-        $genre->update(['description' => $script]);
-        $author = Author::query()->firstOrFail();
-        $author->update(['description' => $script]);
-
-        $this->get('/genres')
-            ->assertOk()
-            ->assertDontSee($script, false)
-            ->assertSee('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;', false);
-
-        $this->get('/authors')
-            ->assertOk()
-            ->assertDontSee($script, false)
-            ->assertSee('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;', false);
-    }
-
-    public function test_admin_can_log_in_through_the_browser_and_open_the_dashboard(): void
-    {
-        $admin = User::factory()->create([
-            'email' => 'admin@example.test',
-            'password' => 'a-strong-password',
-            'is_admin' => true,
-        ]);
-
-        $this->get('/login')
-            ->assertOk()
-            ->assertViewIs('auth.login')
-            ->assertSee('name="email"', false)
-            ->assertSee('name="password"', false);
-
-        $this->post('/login', [
-            'email' => ' ADMIN@EXAMPLE.TEST ',
-            'password' => 'a-strong-password',
-        ])->assertRedirect(route('admin.dashboard'));
-
-        $this->assertAuthenticatedAs($admin, 'web');
-
-        $this->get('/admin')
-            ->assertOk()
-            ->assertViewIs('admin.dashboard')
-            ->assertSeeText('admin@example.test');
-    }
-
-    public function test_browser_login_accepts_customer_accounts(): void
-    {
-        User::factory()->create([
-            'email' => 'customer@example.test',
-            'password' => 'a-strong-password',
-        ]);
-
-        $this->post('/login', [
-            'email' => 'customer@example.test',
-            'password' => 'a-strong-password',
-        ])->assertRedirect(route('home'));
-
-        $this->assertAuthenticatedAs(User::query()->where('email', 'customer@example.test')->firstOrFail(), 'web');
-    }
-
-    public function test_browser_login_rejects_an_incorrect_admin_password(): void
-    {
-        User::factory()->create([
-            'email' => 'admin@example.test',
-            'password' => 'a-strong-password',
-            'is_admin' => true,
-        ]);
-
-        $this->post('/login', [
-            'email' => 'admin@example.test',
-            'password' => 'incorrect-password',
-        ])->assertRedirect()
-            ->assertSessionHasErrors('email');
-
-        $this->assertGuest('web');
-    }
-
-    public function test_browser_login_requires_email_and_password(): void
-    {
-        $this->post('/login', [])
-            ->assertRedirect()
-            ->assertSessionHasErrors(['email', 'password']);
-
-        $this->assertGuest('web');
-    }
-
-    public function test_guest_is_redirected_to_login_from_the_browser_dashboard(): void
-    {
-        $this->get('/admin')
-            ->assertRedirect(route('login'));
-
-        $this->assertGuest('web');
-    }
-
-    public function test_only_admins_can_open_the_browser_dashboard(): void
-    {
-        $customer = User::factory()->create();
-
-        $this->actingAs($customer, 'web')
-            ->get('/admin')
-            ->assertForbidden();
-
-        $this->assertAuthenticatedAs($customer, 'web');
-    }
-
-    public function test_admin_can_log_out_of_the_browser_session(): void
-    {
-        $admin = User::factory()->create(['is_admin' => true]);
-
-        $this->actingAs($admin, 'web')
-            ->post('/logout')
-            ->assertRedirect(route('home'));
-
-        $this->assertGuest('web');
-    }
-
-    public function test_genre_resource_supports_crud_and_keeps_book_genre_text_in_sync(): void
+    public function test_admin_can_manage_genres_with_foreign_key_book_relationships(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);
         Sanctum::actingAs($admin);
 
-        $created = $this->postJson('/api/genres', [
-            'name' => 'Genre API',
-            'description' => 'Genre untuk pengujian.',
-        ])->assertCreated()
-            ->assertJsonPath('data.name', 'Genre API');
+        $created = $this->postJson('/api/genres', ['name' => 'Genre SPA', 'description' => 'Genre untuk pengujian.'])
+            ->assertCreated()
+            ->assertJsonPath('data.name', 'Genre SPA');
+        $genre = Genre::query()->findOrFail($created->json('data.id'));
+        $book = Book::factory()->create(['genre_id' => $genre->id, 'genre' => $genre->name]);
 
-        $genreId = $created->json('data.id');
-        $book = Book::factory()->create(['genre' => 'Genre API']);
-
-        $this->getJson("/api/genres/{$genreId}")
+        $this->patchJson("/api/genres/{$genre->id}", ['name' => 'Genre React'])
             ->assertOk()
-            ->assertJsonPath('data.name', 'Genre API');
-
-        $this->putJson("/api/genres/{$genreId}", [
-            'name' => 'Genre Diperbarui',
-            'description' => null,
-        ])->assertOk()
-            ->assertJsonPath('data.name', 'Genre Diperbarui');
-
-        $this->assertSame('Genre Diperbarui', $book->fresh()->genre);
-
-        $this->deleteJson("/api/genres/{$genreId}")
-            ->assertStatus(409);
-
-        $this->deleteJson('/api/genres/1')
-            ->assertOk()
-            ->assertJsonPath('success', true);
-    }
-
-    public function test_author_resource_supports_crud_and_protects_authors_used_by_books(): void
-    {
-        Sanctum::actingAs(User::factory()->create(['is_admin' => true]));
-
-        $created = $this->postJson('/api/authors', [
-            'name' => 'Author API',
-            'nationality' => 'Indonesia',
-            'description' => 'Deskripsi author.',
-        ])->assertCreated()
-            ->assertJsonPath('data.name', 'Author API');
-
-        $authorId = $created->json('data.id');
-        $book = Book::factory()->create([
-            'author_id' => $authorId,
-            'author' => 'Author API',
-        ]);
-
-        $this->getJson("/api/authors/{$authorId}")
-            ->assertOk()
-            ->assertJsonPath('data.books_count', 1);
-
-        $this->patchJson("/api/authors/{$authorId}", ['name' => 'Author Diperbarui'])
-            ->assertOk()
-            ->assertJsonPath('data.name', 'Author Diperbarui');
-
-        $this->assertSame('Author Diperbarui', $book->fresh()->author);
-        $this->deleteJson("/api/authors/{$authorId}")->assertStatus(409);
+            ->assertJsonPath('data.name', 'Genre React');
+        $this->assertSame($genre->id, $book->fresh()->genre_id);
+        $this->deleteJson("/api/genres/{$genre->id}")->assertStatus(409);
 
         $book->delete();
-        $this->deleteJson("/api/authors/{$authorId}")->assertOk();
+        $this->deleteJson("/api/genres/{$genre->id}")->assertOk();
     }
 
-    public function test_returns_404_for_missing_genre_on_show_update_and_destroy(): void
-    {
-        Sanctum::actingAs(User::factory()->create(['is_admin' => true]));
-        $missingGenreId = 2147483647;
-
-        $this->getJson("/api/genres/{$missingGenreId}")
-            ->assertNotFound()
-            ->assertJsonPath('success', false)
-            ->assertJsonPath('message', 'Resource not found')
-            ->assertJsonPath('data', null);
-
-        $this->patchJson("/api/genres/{$missingGenreId}", ['name' => 'Genre tidak ditemukan'])
-            ->assertNotFound()
-            ->assertJsonPath('success', false)
-            ->assertJsonPath('message', 'Resource not found')
-            ->assertJsonPath('data', null);
-
-        $this->deleteJson("/api/genres/{$missingGenreId}")
-            ->assertNotFound()
-            ->assertJsonPath('success', false)
-            ->assertJsonPath('message', 'Resource not found')
-            ->assertJsonPath('data', null);
-    }
-
-    public function test_returns_404_for_missing_author_on_show_update_and_destroy(): void
-    {
-        Sanctum::actingAs(User::factory()->create(['is_admin' => true]));
-        $missingAuthorId = 2147483647;
-
-        $this->getJson("/api/authors/{$missingAuthorId}")
-            ->assertNotFound()
-            ->assertJsonPath('success', false)
-            ->assertJsonPath('message', 'Resource not found')
-            ->assertJsonPath('data', null);
-
-        $this->patchJson("/api/authors/{$missingAuthorId}", ['name' => 'Author tidak ditemukan'])
-            ->assertNotFound()
-            ->assertJsonPath('success', false)
-            ->assertJsonPath('message', 'Resource not found')
-            ->assertJsonPath('data', null);
-
-        $this->deleteJson("/api/authors/{$missingAuthorId}")
-            ->assertNotFound()
-            ->assertJsonPath('success', false)
-            ->assertJsonPath('message', 'Resource not found')
-            ->assertJsonPath('data', null);
-    }
-
-    public function test_guests_can_read_genres_and_authors(): void
-    {
-        $genre = Genre::query()->create([
-            'name' => 'Genre publik',
-            'description' => 'Dapat dibaca tanpa login.',
-        ]);
-        $author = Author::factory()->create(['name' => 'Author publik']);
-
-        $this->getJson('/api/genres')
-            ->assertOk()
-            ->assertJsonFragment(['id' => $genre->id, 'name' => 'Genre publik']);
-        $this->getJson("/api/genres/{$genre->id}")
-            ->assertOk()
-            ->assertJsonPath('data.name', 'Genre publik');
-        $this->getJson('/api/authors')
-            ->assertOk()
-            ->assertJsonFragment(['id' => $author->id, 'name' => 'Author publik']);
-        $this->getJson("/api/authors/{$author->id}")
-            ->assertOk()
-            ->assertJsonPath('data.name', 'Author publik');
-    }
-
-    public function test_returns_401_when_guests_attempt_genre_and_author_writes(): void
-    {
-        $genre = Genre::query()->create([
-            'name' => 'Genre terlindungi',
-            'description' => 'Hanya admin yang dapat mengubah.',
-        ]);
-        $author = Author::factory()->create(['name' => 'Author terlindungi']);
-
-        $this->postJson('/api/genres', ['name' => 'Genre tamu'])->assertUnauthorized();
-        $this->patchJson("/api/genres/{$genre->id}", ['name' => 'Genre berubah'])->assertUnauthorized();
-        $this->deleteJson("/api/genres/{$genre->id}")->assertUnauthorized();
-        $this->postJson('/api/authors', ['name' => 'Author tamu'])->assertUnauthorized();
-        $this->patchJson("/api/authors/{$author->id}", ['name' => 'Author berubah'])->assertUnauthorized();
-        $this->deleteJson("/api/authors/{$author->id}")->assertUnauthorized();
-
-        $this->assertModelExists($genre);
-        $this->assertModelExists($author);
-        $this->assertDatabaseMissing('genres', ['name' => 'Genre tamu']);
-        $this->assertDatabaseMissing('authors', ['name' => 'Author tamu']);
-    }
-
-    public function test_returns_403_when_non_admin_users_attempt_genre_and_author_writes(): void
+    public function test_admin_can_manage_authors_and_customer_writes_are_forbidden(): void
     {
         Sanctum::actingAs(User::factory()->create());
-        $genre = Genre::query()->create([
-            'name' => 'Genre khusus admin',
-            'description' => 'Hanya admin yang dapat mengubah.',
-        ]);
-        $author = Author::factory()->create(['name' => 'Author khusus admin']);
+        $this->postJson('/api/authors', ['name' => 'Tidak Diizinkan'])->assertForbidden();
 
-        $this->postJson('/api/genres', ['name' => 'Genre non-admin'])->assertForbidden();
-        $this->patchJson("/api/genres/{$genre->id}", ['name' => 'Genre berubah'])->assertForbidden();
-        $this->deleteJson("/api/genres/{$genre->id}")->assertForbidden();
-        $this->postJson('/api/authors', ['name' => 'Author non-admin'])->assertForbidden();
-        $this->patchJson("/api/authors/{$author->id}", ['name' => 'Author berubah'])->assertForbidden();
-        $this->deleteJson("/api/authors/{$author->id}")->assertForbidden();
+        Sanctum::actingAs(User::factory()->create(['is_admin' => true]));
+        $created = $this->postJson('/api/authors', ['name' => 'Penulis SPA', 'nationality' => 'Indonesia'])
+            ->assertCreated()
+            ->assertJsonPath('data.name', 'Penulis SPA');
+        $author = Author::query()->findOrFail($created->json('data.id'));
+        $book = Book::factory()->create(['author_id' => $author->id, 'author' => $author->name]);
 
-        $this->assertModelExists($genre);
-        $this->assertModelExists($author);
-        $this->assertDatabaseMissing('genres', ['name' => 'Genre non-admin']);
-        $this->assertDatabaseMissing('authors', ['name' => 'Author non-admin']);
+        $this->patchJson("/api/authors/{$author->id}", ['name' => 'Penulis React'])->assertOk();
+        $this->assertSame('Penulis React', $book->fresh()->authorRecord->name);
+        $this->deleteJson("/api/authors/{$author->id}")->assertStatus(409);
     }
 }

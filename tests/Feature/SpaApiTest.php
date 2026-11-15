@@ -16,6 +16,33 @@ class SpaApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_registration_creates_a_customer_and_issues_a_sanctum_token(): void
+    {
+        $response = $this->postJson('/api/register', [
+            'name' => 'Pengguna Baru',
+            'username' => 'penggunabaru',
+            'email' => 'baru@example.test',
+            'password' => 'password-kuat',
+            'password_confirmation' => 'password-kuat',
+        ])->assertCreated()->assertJsonPath('data.user.is_admin', false);
+
+        $token = $response->json('data.token');
+        $this->withToken($token)->getJson('/api/user')->assertOk()->assertJsonPath('email', 'baru@example.test');
+        $this->withToken($token)->postJson('/api/logout')->assertOk();
+        $this->assertDatabaseMissing('personal_access_tokens', ['id' => (int) explode('|', $token, 2)[0]]);
+    }
+
+    public function test_registration_rejects_a_mismatched_password_confirmation(): void
+    {
+        $this->postJson('/api/register', [
+            'name' => 'Pengguna Baru',
+            'username' => 'penggunabaru',
+            'email' => 'baru@example.test',
+            'password' => 'password-kuat',
+            'password_confirmation' => 'yang-berbeda',
+        ])->assertUnprocessable()->assertJsonValidationErrors('password');
+    }
+
     public function test_book_api_searches_by_title_author_and_isbn_and_returns_pagination_metadata(): void
     {
         $author = Author::factory()->create(['name' => 'Penulis Pencarian']);

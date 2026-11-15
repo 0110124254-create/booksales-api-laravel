@@ -310,12 +310,13 @@ class BookSalesTest extends TestCase
         $this->getJson("/api/orders/{$sale->reference}")->assertUnauthorized();
     }
 
-    public function test_browser_visiting_the_api_order_link_is_sent_to_the_web_order_page(): void
+    public function test_api_order_links_require_json_api_authentication(): void
     {
         $sale = Sale::factory()->create();
 
         $this->get("/api/orders/{$sale->reference}", ['Accept' => 'text/html'])
-            ->assertRedirect(route('orders.show', $sale->reference));
+            ->assertUnauthorized()
+            ->assertJsonPath('message', 'Unauthenticated.');
     }
 
     public function test_customer_cannot_list_or_delete_sales_and_admin_cannot_use_customer_crud(): void

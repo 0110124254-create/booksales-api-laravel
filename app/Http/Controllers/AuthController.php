@@ -144,7 +144,7 @@ class AuthController extends Controller
             'name' => ['required', 'string', 'min:3', 'max:255'],
             'username' => ['required', 'string', 'min:3', 'max:50', 'alpha_dash', 'unique:users,username'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:6'],
+            'password' => ['required', 'string', 'min:6', 'confirmed'],
         ], [
             'name.required' => 'Nama lengkap wajib diisi.',
             'name.min' => 'Nama lengkap minimal 3 karakter.',
@@ -157,6 +157,7 @@ class AuthController extends Controller
             'email.unique' => 'Email ini sudah terdaftar di sistem.',
             'password.required' => 'Kata sandi wajib diisi.',
             'password.min' => 'Kata sandi minimal 6 karakter.',
+            'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
         ]);
 
         if ($validator->fails()) {
